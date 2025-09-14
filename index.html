@@ -1,102 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>HOD Attendance Portal</title>
+  <style>
+    body {font-family:Arial, sans-serif; margin:20px;}
+    h2 {color:#333;}
+    #studentsList label {display:block; margin:4px 0;}
+    button {margin-top:10px; padding:6px 12px;}
+  </style>
 </head>
 <body>
-  <h2>Attendance Portal</h2>
 
-  <label for="yearSelect">Select Year:</label>
-  <select id="yearSelect">
-    <option value="">--Select--</option>
-    <option value="1">1st Year</option>
-    <option value="2">2nd Year</option>
-    <option value="3">3rd Year</option>
-    <option value="4">4th Year</option>
+<h2>HOD Attendance</h2>
+
+<label>Year:
+  <select id="year">
+    <option value="1">1</option>
+    <option value="2">2</option>
+    <option value="3">3</option>
+    <option value="4">4</option>
   </select>
+</label>
 
-  <br><br>
-  <button onclick="loadStudents()">Load Students</button>
-  <ul id="studentsList"></ul>
+<button onclick="loadStudents()">Load Students</button>
 
-  <br>
-  <button onclick="saveAttendance()">Save Attendance</button>
+<div id="studentsList"></div>
 
-  <script>
-    // ✅ Your Apps Script Web App URL
-    const API_URL = "https://script.google.com/macros/s/AKfycbz3nMfnMzZd4N9KS5LcTa9FuBtzFQstDazzMyOpx3TzK5L5I3RA5oEQvxJ4vzdEGgSV/exec";
-    
-    // ✅ dept comes from login (example: ?dept=CSM)
-    const DEPT = new URLSearchParams(window.location.search).get("dept"); 
+<button onclick="saveAttendance()">Save Attendance</button>
 
-    // ==============================
-    // Load Students
-    // ==============================
-    async function loadStudents() {
-      const year = document.getElementById("yearSelect").value;
-      if (!year) return alert("Select a year first!");
+<p id="msg"></p>
 
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "getStudents",
-            dept: DEPT,
-            year
-          })
-        });
+<script>
+// === REPLACE WITH YOUR SCRIPT URL ===
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzX35p2lWwIPw36dLT2NPTl-el8NsRPPBqptCPrrvbk34BxjJhc_WCNpvhZeJzU3tty/exec";
 
-        const result = await response.json();
-        console.log("Students Response:", result);
+// dept is passed from MIT App after login:  index.html?dept=CSM
+const params = new URLSearchParams(window.location.search);
+const dept = params.get("dept") || "";
 
-        if (result.students && Array.isArray(result.students)) {
-          let html = "";
-          result.students.forEach(s => {
-            html += `<li>
-              <input type="checkbox" class="studentBox" value="${s.roll}">
-              ${s.roll} - ${s.name}
-            </li>`;
-          });
-          document.getElementById("studentsList").innerHTML = html;
-        } else {
-          alert("No students found for this dept/year!");
-        }
-      } catch (err) {
-        alert("Error loading students: " + err);
-      }
-    }
+async function loadStudents(){
+  const yr = document.getElementById('year').value;
+  const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!data.success) return alert(data.message);
+    document.getElementById('studentsList').innerHTML =
+      data.students.map(s =>
+        `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`
+      ).join("");
+  } catch(err){
+    alert("Error loading students: " + err);
+  }
+}
 
-    // ==============================
-    // Save Attendance
-    // ==============================
-    async function saveAttendance() {
-      const year = document.getElementById("yearSelect").value;
-      if (!year) return alert("Select a year first!");
+async function saveAttendance(){
+  const date = new Date().toISOString().split('T')[0];
+  const yr = document.getElementById('year').value;
+  const abs = [...document.querySelectorAll('#studentsList input:checked')]
+               .map(c => c.value)
+               .join(',');
+  const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absentees=${encodeURIComponent(abs)}`;
+  try {
+    const res = await fetch(url);
+    const j = await res.json();
+    document.getElementById('msg').innerText = j.message || j.error;
+  } catch(err){
+    alert("Error saving attendance: " + err);
+  }
+}
+</script>
 
-      const absentees = [];
-      document.querySelectorAll(".studentBox").forEach(box => {
-        if (!box.checked) absentees.push(box.value);
-      });
-
-      try {
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "saveAttendance",
-            dept: DEPT,
-            year,
-            absentees
-          })
-        });
-
-        const result = await response.json();
-        alert(result.message || "Attendance saved!");
-      } catch (err) {
-        alert("Error saving: " + err);
-      }
-    }
-  </script>
 </body>
 </html>
