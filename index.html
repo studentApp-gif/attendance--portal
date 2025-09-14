@@ -1,105 +1,102 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HOD Attendance Portal</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-    h1 { text-align: center; }
-    .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
-    select, button { padding: 8px; margin: 5px 0; }
-    label { display: block; margin: 4px 0; }
-  </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Attendance – HOD Panel</h1>
+  <h2>Attendance Portal</h2>
 
-    <label for="yearSelect">Select Year:</label>
-    <select id="yearSelect">
-      <option value="">-- Choose Year --</option>
-      <option value="1">1st Year</option>
-      <option value="2">2nd Year</option>
-      <option value="3">3rd Year</option>
-      <option value="4">4th Year</option>
-    </select>
+  <label for="yearSelect">Select Year:</label>
+  <select id="yearSelect">
+    <option value="">--Select--</option>
+    <option value="1">1st Year</option>
+    <option value="2">2nd Year</option>
+    <option value="3">3rd Year</option>
+    <option value="4">4th Year</option>
+  </select>
 
-    <button onclick="loadStudents()">Load Students</button>
+  <br><br>
+  <button onclick="loadStudents()">Load Students</button>
+  <ul id="studentsList"></ul>
 
-    <div id="studentList"></div>
+  <br>
+  <button onclick="saveAttendance()">Save Attendance</button>
 
-    <button onclick="saveAttendance()">Save Attendance</button>
-  </div>
+  <script>
+    // ✅ Your Apps Script Web App URL
+    const API_URL = "https://script.google.com/macros/s/AKfycbz3nMfnMzZd4N9KS5LcTa9FuBtzFQstDazzMyOpx3TzK5L5I3RA5oEQvxJ4vzdEGgSV/exec";
+    
+    // ✅ dept comes from login (example: ?dept=CSM)
+    const DEPT = new URLSearchParams(window.location.search).get("dept"); 
 
-<script>
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbz3nMfnMzZd4N9KS5LcTa9FuBtzFQstDazzMyOpx3TzK5L5I3RA5oEQvxJ4vzdEGgSV/exec";
+    // ==============================
+    // Load Students
+    // ==============================
+    async function loadStudents() {
+      const year = document.getElementById("yearSelect").value;
+      if (!year) return alert("Select a year first!");
 
-// Read ?dept=… from URL
-function getDeptFromURL() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("dept") || "";
-}
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "getStudents",
+            dept: DEPT,
+            year
+          })
+        });
 
-const DEPT = getDeptFromURL();
+        const result = await response.json();
+        console.log("Students Response:", result);
 
-// Load students for chosen year
-async function loadStudents() {
-  const year = document.getElementById("yearSelect").value;
-  if (!year) return alert("Please select a year");
-  if (!DEPT) return alert("Department not found in URL");
-
-  try {
-    const res = await fetch(`${API_URL}?action=getStudents&year=${year}&dept=${DEPT}`);
-    const data = await res.json();
-
-    if (!data || data.length === 0) {
-      document.getElementById("studentList").innerHTML =
-        "<p>No students found.</p>";
-      return;
+        if (result.students && Array.isArray(result.students)) {
+          let html = "";
+          result.students.forEach(s => {
+            html += `<li>
+              <input type="checkbox" class="studentBox" value="${s.roll}">
+              ${s.roll} - ${s.name}
+            </li>`;
+          });
+          document.getElementById("studentsList").innerHTML = html;
+        } else {
+          alert("No students found for this dept/year!");
+        }
+      } catch (err) {
+        alert("Error loading students: " + err);
+      }
     }
 
-    let html = "<form id='attendanceForm'>";
-    data.forEach(stu => {
-      html += `<label>
-                <input type="checkbox" name="absent" value="${stu.roll}">
-                ${stu.roll}
-               </label>`;
-    });
-    html += "</form>";
-    document.getElementById("studentList").innerHTML = html;
-  } catch (err) {
-    alert("Error loading students: " + err);
-  }
-}
+    // ==============================
+    // Save Attendance
+    // ==============================
+    async function saveAttendance() {
+      const year = document.getElementById("yearSelect").value;
+      if (!year) return alert("Select a year first!");
 
-// Save attendance to sheet
-async function saveAttendance() {
-  const absentees = [...document.querySelectorAll("input[name='absent']:checked")]
-    .map(cb => cb.value);
+      const absentees = [];
+      document.querySelectorAll(".studentBox").forEach(box => {
+        if (!box.checked) absentees.push(box.value);
+      });
 
-  const year = document.getElementById("yearSelect").value;
-  if (!year) return alert("Select a year first!");
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "saveAttendance",
+            dept: DEPT,
+            year,
+            absentees
+          })
+        });
 
-  try {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "saveAttendance",
-        dept: DEPT,
-        year,
-        absentees
-      })
-    });
-
-    const result = await response.json();
-    alert(result.message || "Attendance saved!");
-  } catch (err) {
-    alert("Error saving: " + err);
-  }
-}
-</script>
+        const result = await response.json();
+        alert(result.message || "Attendance saved!");
+      } catch (err) {
+        alert("Error saving: " + err);
+      }
+    }
+  </script>
 </body>
 </html>
