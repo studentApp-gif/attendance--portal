@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Student Attendance Portal | SVCE, Kadapa</title>
+    <title>HOD Attendance Portal | SVCE, Kadapa</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -99,6 +99,15 @@
             background-color: #1a476f;
             transform: translateY(1px);
         }
+        
+        #unapprovedList {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
 
         #studentsList {
             margin-top: 20px;
@@ -138,7 +147,12 @@
     </header>
 
     <div class="content">
-        <h2>Studnet Attendance Portal</h2>
+        <h2>HOD Attendance Portal</h2>
+        
+        <div class="form-group">
+            <label for="date">Select Date:</label>
+            <input type="date" id="date" value="">
+        </div>
 
         <div class="form-group">
             <label for="year">Select Year:</label>
@@ -155,12 +169,21 @@
         <div id="studentsList"></div>
 
         <button onclick="saveAttendance()">Save Attendance</button>
+        
+        <hr> <button onclick="checkUnapprovedAbsentees()">Check Unapproved Absentees</button>
+        <div id="unapprovedList"></div>
 
         <p id="msg"></p>
     </div>
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set today's date in the date input field
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('date').value = today;
+    });
+
     // === REPLACE WITH YOUR SCRIPT URL ===
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzX35p2lWwIPw36dLT2NPTl-el8NsRPPBqptCPrrvbk34BxjJhc_WCNpvhZeJzU3tty/exec";
 
@@ -195,7 +218,7 @@
     }
 
     async function saveAttendance(){
-        const date = new Date().toISOString().split('T')[0];
+        const date = document.getElementById('date').value;
         const yr = document.getElementById('year').value;
         const abs = [...document.querySelectorAll('#studentsList input:checked')]
                     .map(c => c.value)
@@ -211,6 +234,37 @@
             msg.innerText = j.message || j.error;
         } catch(err){
             msg.textContent = "Error saving attendance: " + err;
+        }
+    }
+    
+    // ======== NEW: Function to check for unapproved absentees =========
+    async function checkUnapprovedAbsentees() {
+        const date = document.getElementById('date').value;
+        const url = `${WEBAPP_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&date=${encodeURIComponent(date)}`;
+        const unapprovedListDiv = document.getElementById('unapprovedList');
+        const msg = document.getElementById('msg');
+        msg.textContent = 'Checking...';
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            
+            if (data.success) {
+                if (data.unapprovedRollnos.length > 0) {
+                    unapprovedListDiv.innerHTML = '<h3>Students with No Leave Application:</h3><ul>' + 
+                        data.unapprovedRollnos.map(rollno => `<li>${rollno}</li>`).join('') +
+                        '</ul>';
+                    msg.textContent = `Found ${data.unapprovedRollnos.length} students without leave.`;
+                } else {
+                    unapprovedListDiv.innerHTML = '';
+                    msg.textContent = 'All absentees have applied for leave.';
+                }
+            } else {
+                unapprovedListDiv.innerHTML = '';
+                msg.textContent = 'Error: ' + data.message;
+            }
+        } catch(err) {
+            msg.textContent = "Error checking unapproved absentees: " + err;
         }
     }
 </script>
