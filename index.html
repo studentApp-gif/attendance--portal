@@ -3,141 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HOD Attendance Dashboard</title>
+  <title>HOD Attendance Portal</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background:#f5f5f5;}
-    h1 { color:#333; }
-    .controls { margin-bottom:20px; }
-    table { width:100%; border-collapse:collapse; margin-top:20px;}
-    th, td { border:1px solid #ccc; padding:8px; text-align:left;}
-    th { background:#eee;}
-    button { padding:8px 16px; margin-top:15px; cursor:pointer;}
-    .leave { color:green; font-weight:bold; }
-    .no-leave { color:red; font-weight:bold; }
+    body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+    h1 { text-align: center; }
+    .container { max-width: 700px; margin: auto; background: #fff; padding: 20px; border-radius: 10px; }
+    select, button { padding: 8px; margin: 5px 0; }
+    label { display: block; margin: 4px 0; }
   </style>
 </head>
 <body>
-  <h1>HOD Attendance Dashboard</h1>
-  <div id="welcome"></div>
+  <div class="container">
+    <h1>Attendance – HOD Panel</h1>
 
-  <div class="controls">
-    <label for="year">Select Year:</label>
-    <select id="year">
+    <label for="yearSelect">Select Year:</label>
+    <select id="yearSelect">
       <option value="">-- Choose Year --</option>
       <option value="1">1st Year</option>
       <option value="2">2nd Year</option>
       <option value="3">3rd Year</option>
       <option value="4">4th Year</option>
     </select>
-    <button id="loadBtn">Load Students</button>
+
+    <button onclick="loadStudents()">Load Students</button>
+
+    <div id="studentList"></div>
+
+    <button onclick="saveAttendance()">Save Attendance</button>
   </div>
 
-  <div id="tableContainer"></div>
+<script>
+const API_URL =
+  "https://script.google.com/macros/s/AKfycbz3nMfnMzZd4N9KS5LcTa9FuBtzFQstDazzMyOpx3TzK5L5I3RA5oEQvxJ4vzdEGgSV/exec";
 
-  <button id="saveBtn" style="display:none;">Save Attendance</button>
-  <div id="status"></div>
+// Read ?dept=… from URL
+function getDeptFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("dept") || "";
+}
 
-  <script>
-    // ===== CONFIG =====
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3nMfnMzZd4N9KS5LcTa9FuBtzFQstDazzMyOpx3TzK5L5I3RA5oEQvxJ4vzdEGgSV/exec";
+const DEPT = getDeptFromURL();
 
-    // ===== Parse query parameters (dept & email) =====
-    const params = new URLSearchParams(window.location.search);
-    const dept  = params.get('dept');
-    //const email = params.get('email');
-    document.getElementById('welcome').innerHTML = `<b>Department:</b> ${dept} <br><b>HOD:</b> ${email}`;
+// Load students for chosen year
+async function loadStudents() {
+  const year = document.getElementById("yearSelect").value;
+  if (!year) return alert("Please select a year");
+  if (!DEPT) return alert("Department not found in URL");
 
-    const yearSel   = document.getElementById('year');
-    const loadBtn   = document.getElementById('loadBtn');
-    const saveBtn   = document.getElementById('saveBtn');
-    const tableDiv  = document.getElementById('tableContainer');
-    const statusDiv = document.getElementById('status');
+  try {
+    const res = await fetch(`${API_URL}?action=getStudents&year=${year}&dept=${DEPT}`);
+    const data = await res.json();
 
-    let students = [];
-
-    // ===== Load students list =====
-    loadBtn.addEventListener('click', () => {
-      const year = yearSel.value;
-      if (!year) { alert("Choose a Year first!"); return; }
-
-      statusDiv.innerHTML = "Loading students...";
-      fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            students = data.students;
-            renderTable(students);
-            saveBtn.style.display = "inline-block";
-            statusDiv.innerHTML = "";
-          } else {
-            statusDiv.innerHTML = "Error: " + data.message;
-          }
-        })
-        .catch(err => statusDiv.innerHTML = "Error: " + err);
-    });
-
-    // ===== Render student table with checkboxes =====
-    function renderTable(list) {
-      if (!list.length) {
-        tableDiv.innerHTML = "<p>No students found for this year.</p>";
-        return;
-      }
-
-      let html = "<table><thead><tr><th>Roll No</th><th>Email</th><th>Absent?</th></tr></thead><tbody>";
-      list.forEach(st => {
-        html += `<tr>
-          <td>${st.rollno}</td>
-          <td>${st.email}</td>
-          <td><input type="checkbox" class="absent" value="${st.rollno}"></td>
-        </tr>`;
-      });
-      html += "</tbody></table>";
-      tableDiv.innerHTML = html;
+    if (!data || data.length === 0) {
+      document.getElementById("studentList").innerHTML =
+        "<p>No students found.</p>";
+      return;
     }
 
-    // ===== Save attendance =====
-    saveBtn.addEventListener('click', () => {
-      const checked = [...document.querySelectorAll('.absent:checked')].map(cb => cb.value);
-      const year = yearSel.value;
-      const today = new Date().toISOString().slice(0,10);
+    let html = "<form id='attendanceForm'>";
+    data.forEach(stu => {
+      html += `<label>
+                <input type="checkbox" name="absent" value="${stu.roll}">
+                ${stu.roll}
+               </label>`;
+    });
+    html += "</form>";
+    document.getElementById("studentList").innerHTML = html;
+  } catch (err) {
+    alert("Error loading students: " + err);
+  }
+}
 
-      statusDiv.innerHTML = "Saving attendance...";
-      fetch(`${SCRIPT_URL}?action=saveAttendance&dept=${dept}&year=${year}&date=${today}&absentees=${checked.join(",")}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            statusDiv.innerHTML = "✅ Attendance saved. Checking leave requests...";
-            getLeaves(year, today, checked);
-          } else {
-            statusDiv.innerHTML = "Error saving: " + data.message;
-          }
-        })
-        .catch(err => statusDiv.innerHTML = "Error: " + err);
+// Save attendance to sheet
+async function saveAttendance() {
+  const absentees = [...document.querySelectorAll("input[name='absent']:checked")]
+    .map(cb => cb.value);
+
+  const year = document.getElementById("yearSelect").value;
+  if (!year) return alert("Select a year first!");
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "saveAttendance",
+        dept: DEPT,
+        year,
+        absentees
+      })
     });
 
-    // ===== Get leave requests and compare =====
-    function getLeaves(year, date, absentees) {
-      fetch(`${SCRIPT_URL}?action=getLeaveRequests&dept=${dept}&date=${date}`)
-        .then(r => r.json())
-        .then(data => {
-          if (data.success) {
-            const leaves = data.leaves.map(l => l.rollno);
-            let html = "<h3>Absentees:</h3><ul>";
-            absentees.forEach(roll => {
-              if (leaves.includes(roll)) {
-                html += `<li class="leave">${roll} ✔️ (Leave Applied)</li>`;
-              } else {
-                html += `<li class="no-leave">${roll} ❌ (No Leave)</li>`;
-              }
-            });
-            html += "</ul>";
-            tableDiv.insertAdjacentHTML('beforeend', html);
-            statusDiv.innerHTML = "";
-          } else {
-            statusDiv.innerHTML = "Could not fetch leave data";
-          }
-        });
-    }
-  </script>
+    const result = await response.json();
+    alert(result.message || "Attendance saved!");
+  } catch (err) {
+    alert("Error saving: " + err);
+  }
+}
+</script>
 </body>
 </html>
