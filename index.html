@@ -2,72 +2,119 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>HOD Attendance Portal</title>
+<title>Principal Dashboard | SVCE Kadapa</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 <style>
-body{font-family:sans-serif;margin:0;padding:0;background:#f4f4f4;}
-.container{width:90%;max-width:600px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.2);}
-h2{text-align:center;color:#004d80;}
-label{display:block;margin:10px 0 5px;}
-input,select,button{width:100%;padding:10px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;box-sizing:border-box;}
-button{background:#337ab7;color:#fff;border:none;cursor:pointer;}
-#studentsList label{display:flex;align-items:center;margin:5px 0;}
-#studentsList input[type="checkbox"]{margin-right:10px;}
-#msg{text-align:center;font-weight:500;margin-top:10px;}
+body { font-family: Arial, sans-serif; background:#f7f7f7; margin:0; }
+header { background:#004d80; color:white; padding:15px; text-align:center; font-size:1.5rem; }
+.dept-block { background:#fff; margin:25px auto; padding:20px; max-width:900px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.1);}
+h2 { margin-top:0; color:#004d80; }
+.row { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; }
+.info { flex:1 1 45%; }
+table { width:100%; border-collapse:collapse; margin-top:10px;}
+th, td { padding:6px 8px; border:1px solid #ddd; text-align:center;}
+th { background:#004d80; color:#fff;}
+canvas { width:100%; max-width:350px; height:350px !important; }
+.error { color:red; text-align:center; margin-top:20px; font-weight:bold; }
+.present-count { color:green; font-weight:bold; }
 </style>
 </head>
 <body>
-<div class="container">
-<h2>HOD Attendance Portal</h2>
-<label for="date">Select Date:</label>
-<input type="date" id="date">
-<label for="year">Select Year:</label>
-<select id="year">
-<option value="1">1st Year</option>
-<option value="2">2nd Year</option>
-<option value="3">3rd Year</option>
-<option value="4">4th Year</option>
-</select>
-<button onclick="loadStudents()">Load Students</button>
-<div id="studentsList"></div>
-<button onclick="saveAttendance()">Save Attendance</button>
-<p id="msg"></p>
-</div>
+<header>Today Attendance Report | SVCE Kadapa (AUTONOMOUS) </header>
+<div id="content">Loading dashboard...</div>
 
 <script>
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzw_lWjrVcq4XAj58qfH3pg6Y3bySZaj8zAmdIReyjKZjKAmG2_Q0agvLcaP6D1ldGp/exec"; // Replace with Apps Script WebApp URL
-const params = new URLSearchParams(window.location.search);
-const dept = params.get("dept")||"";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3a_w2-SWIplHcYxyE3mkQFBOsnvilgxwxunnPH3NSRCMq2Q5-x2-udND_6uLk2p4l/exec"; // Replace with your Apps Script URL
 
-document.addEventListener('DOMContentLoaded',()=>{
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
-});
+document.addEventListener("DOMContentLoaded", loadDashboard);
 
-async function loadStudents(){
-    const yr = document.getElementById('year').value;
-    const studentsListDiv = document.getElementById('studentsList');
-    const msg = document.getElementById('msg');
-    msg.textContent = 'Loading...';
-    try{
-        const res = await fetch(`${WEBAPP_URL}?action=getStudents&dept=${dept}&year=${yr}`);
-        const data = await res.json();
-        if(!data.success){msg.textContent=data.message; return;}
-        studentsListDiv.innerHTML = data.students.map(s=>`<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`).join("");
-        msg.textContent = '';
-    }catch(err){msg.textContent='Error: '+err;}
-}
+async function loadDashboard() {
+  const container = document.getElementById("content");
+  try {
+    const today = new Date().toISOString().split('T')[0]; // Today's date
+    const res = await fetch(`${SCRIPT_URL}?action=getPrincipalSummary&date=${today}`);
+    const json = await res.json();
 
-async function saveAttendance(){
-    const date = document.getElementById('date').value;
-    const yr   = document.getElementById('year').value;
-    const present = [...document.querySelectorAll('#studentsList input:checked')].map(c=>c.value).join(',');
-    if(!present){document.getElementById('msg').textContent="No student selected!"; return;}
-    const msg = document.getElementById('msg');
-    msg.textContent = 'Saving...';
-    try{
-        const res = await fetch(`${WEBAPP_URL}?action=saveAttendance&dept=${dept}&year=${yr}&date=${date}&present=${present}`);
-        const j = await res.json();
-        msg.textContent = j.message || "Attendance saved successfully!";
-    }catch(err){msg.textContent='Error: '+err;}
+    if (!json.success) throw new Error(json.message);
+    const data = json.data;
+    container.innerHTML = '';
+
+    // Group data by department
+    const depts = {};
+    Object.keys(data).forEach(key => {
+      const [dept, year] = key.split('-');
+      if (!depts[dept]) depts[dept] = {};
+      depts[dept][year] = data[key];
+    });
+
+    Object.keys(depts).forEach(dept => {
+      const yearsData = depts[dept];
+      const block = document.createElement('div');
+      block.className = 'dept-block';
+      block.innerHTML = `<h2>${dept} Department</h2>`;
+
+      const labels = [], totals = [], presents = [], perc = [];
+
+      Object.keys(yearsData).forEach(year => {
+        labels.push(year);
+        const total = yearsData[year].total;
+        const present = yearsData[year].present;
+        totals.push(total);
+        presents.push(present);
+        perc.push(total ? ((present/total)*100).toFixed(1) : 0);
+      });
+
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      // Left Table - Total & Present Students
+      const info = document.createElement('div');
+      info.className = 'info';
+      let tableHTML = `<table><thead><tr><th>Year</th><th>Total Students</th><th>Present</th></tr></thead><tbody>`;
+      labels.forEach((y,i)=>{
+        tableHTML += `<tr><td>${y}</td><td>${totals[i]}</td><td class="present-count">${presents[i]}</td></tr>`;
+      });
+      tableHTML += `</tbody></table>`;
+      info.innerHTML = tableHTML;
+
+      // Right - Pie Chart
+      const chartWrap = document.createElement('div');
+      const canvas = document.createElement('canvas');
+      chartWrap.appendChild(canvas);
+
+      row.appendChild(info);
+      row.appendChild(chartWrap);
+      block.appendChild(row);
+      container.appendChild(block);
+
+      new Chart(canvas, {
+        type:'pie',
+        data:{
+          labels: labels,
+          datasets:[{
+            data: perc,
+            backgroundColor:['#42a5f5','#66bb6a','#ffa726','#ef5350','#ab47bc','#29b6f6']
+          }]
+        },
+        options:{
+          plugins:{
+            legend:{ position:'bottom' },
+            tooltip:{ enabled:true },
+            datalabels: {
+              color: '#fff',
+              formatter: (value, ctx) => value + '%',
+              font: { weight: 'bold', size: 14 }
+            }
+          }
+        },
+        plugins: [ChartDataLabels]
+      });
+    });
+
+  } catch(err){
+    container.innerHTML = `<p class="error">${err.message}</p>`;
+  }
 }
 </script>
 </body>
