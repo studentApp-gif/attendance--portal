@@ -58,7 +58,7 @@
         }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 500; }
-        input[type="date"], select, button {
+        select, button {
             width: 100%;
             padding: 10px;
             border-radius: 4px;
@@ -116,25 +116,12 @@
         <h2>Student Attendance Portal</h2>
 
         <div class="form-group">
-            <label for="date">Date:</label>
-            <input type="date" id="date">
-        </div>
-
-        <div class="form-group">
             <label for="year">Select Year:</label>
             <select id="year">
                 <option value="1">1st Year</option>
                 <option value="2">2nd Year</option>
                 <option value="3">3rd Year</option>
                 <option value="4">4th Year</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label for="session">Select Session:</label>
-            <select id="session">
-                <option value="Morning">Morning</option>
-                <option value="Evening">Evening</option>
             </select>
         </div>
 
@@ -195,24 +182,22 @@
 
     async function saveAttendance() {
         const yr = document.getElementById('year').value;
-        const date = document.getElementById('date').value;
-        const session = document.getElementById('session').value;
         const selected = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
         const msg = document.getElementById('msg');
-
-        if (!date) {
-            msg.textContent = "Please select a date.";
-            return;
-        }
 
         if (selected.length === 0) {
             msg.textContent = "Please select at least one student.";
             return;
         }
 
+        // Automatically get the current date and time to determine the session
+        const now = new Date();
+        const date = now.toISOString().slice(0, 10);
+        const hour = now.getHours();
+        const session = hour < 12 ? 'Morning' : 'Evening';
+        
         msg.textContent = 'Saving attendance...';
         
-        // Corrected URL to use 'present' instead of 'rollnos'
         const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&session=${encodeURIComponent(session)}&present=${encodeURIComponent(selected.join(','))}`;
 
         try {
