@@ -58,7 +58,7 @@
         }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 500; }
-        select, button {
+        input[type="date"], select, button {
             width: 100%;
             padding: 10px;
             border-radius: 4px;
@@ -100,6 +100,9 @@
             margin-top: 15px;
             font-weight: 500;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -113,6 +116,11 @@
         <h2>Student Attendance Portal</h2>
 
         <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" id="date">
+        </div>
+
+        <div class="form-group">
             <label for="year">Select Year:</label>
             <select id="year">
                 <option value="1">1st Year</option>
@@ -122,11 +130,171 @@
             </select>
         </div>
 
+        <div class="form-group">
+            <label for="session">Select Session:</label>
+            <select id="session">
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+            </select>
+        </div>
+
         <button onclick="loadStudents()">Load Students</button>
 
         <div id="studentsList"></div>
 
-        <button onclick="saveAttendance()">Save Attendance</button>
+        <button id="saveBtn" onclick="saveAttendance()" class="hidden">Save Attendance</button>
+
+        <p id="msg"></p>
+    </div>
+</div>
+
+<script>
+    // Replace with your deployed Apps Script WebApp URL
+    const WEBAPP_URL = "<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Portal | SVCE, Kadapa</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #004d80;
+            --secondary-color: #f2f2f2;
+            --accent-color: #337ab7;
+            --text-dark: #333;
+            --text-light: #fff;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--secondary-color);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+        .container {
+            width: 90%;
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        header {
+            background: var(--primary-color);
+            color: var(--text-light);
+            padding: 20px;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-weight: 500;
+        }
+        .content {
+            padding: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: var(--accent-color);
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; }
+        input[type="date"], select, button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        button:hover { background: #286090; }
+        button:active { background: #1a476f; transform: translateY(1px); }
+        #studentsList {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #studentsList label {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        #studentsList input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+        #msg {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Sri Venkateswara College of Engineering, Kadapa</h1>
+    </header>
+
+    <div class="content">
+        <h2>Student Attendance Portal</h2>
+
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input type="date" id="date">
+        </div>
+
+        <div class="form-group">
+            <label for="year">Select Year:</label>
+            <select id="year">
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="session">Select Session:</label>
+            <select id="session">
+                <option value="Morning">Morning</option>
+                <option value="Evening">Evening</option>
+            </select>
+        </div>
+
+        <button onclick="loadStudents()">Load Students</button>
+
+        <div id="studentsList"></div>
+
+        <button id="saveBtn" onclick="saveAttendance()" class="hidden">Save Attendance</button>
 
         <p id="msg"></p>
     </div>
@@ -136,39 +304,142 @@
     // Replace with your deployed Apps Script WebApp URL
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwN40L5gLYB4ITRg-uDIrno2AHmmqOaYOR1fQBDpPnPL-v00uzn8bJqR2JAvQZJU0B_/exec";
 
-    // dept comes from MIT App:  hod.html?dept=CSM
+    // dept comes from MIT App: hod.html?dept=CSM
     const params = new URLSearchParams(window.location.search);
     const dept = params.get("dept") || "";
 
     async function loadStudents() {
         const yr = document.getElementById('year').value;
-        const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
         const studentsListDiv = document.getElementById('studentsList');
+        const saveBtn = document.getElementById('saveBtn');
         const msg = document.getElementById('msg');
         msg.textContent = 'Loading students...';
+        
+        // Hide the save button while loading
+        saveBtn.classList.add('hidden');
+
+        const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
 
         try {
             const res = await fetch(url);
             const data = await res.json();
             if (!data.success) {
                 msg.textContent = data.message || "Unable to fetch students";
+                studentsListDiv.innerHTML = '';
                 return;
             }
-            studentsListDiv.innerHTML = data.students
-                .map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`)
-                .join("");
-            msg.textContent = '';
+            if (data.students.length > 0) {
+                studentsListDiv.innerHTML = data.students
+                    .map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`)
+                    .join("");
+                saveBtn.classList.remove('hidden'); // Show the save button
+                msg.textContent = '';
+            } else {
+                studentsListDiv.innerHTML = '';
+                msg.textContent = "No students found for this department and year.";
+            }
+
         } catch (err) {
             msg.textContent = "Error loading students: " + err;
+            studentsListDiv.innerHTML = '';
         }
     }
 
     async function saveAttendance() {
         const yr = document.getElementById('year').value;
+        const date = document.getElementById('date').value;
+        const session = document.getElementById('session').value;
         const selected = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
-        const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&rollnos=${encodeURIComponent(selected.join(','))}`;
         const msg = document.getElementById('msg');
+
+        if (!date) {
+            msg.textContent = "Please select a date.";
+            return;
+        }
+
+        if (selected.length === 0) {
+            msg.textContent = "Please select at least one student.";
+            return;
+        }
+
         msg.textContent = 'Saving attendance...';
+        
+        const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&session=${encodeURIComponent(session)}&present=${encodeURIComponent(selected.join(','))}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            msg.textContent = data.message || data.error || 'Saved!';
+        } catch (err) {
+            msg.textContent = "Error saving attendance: " + err;
+        }
+    }
+</script>
+
+</body>
+</html>/exec";
+
+    // dept comes from MIT App: hod.html?dept=CSM
+    const params = new URLSearchParams(window.location.search);
+    const dept = params.get("dept") || "";
+
+    async function loadStudents() {
+        const yr = document.getElementById('year').value;
+        const studentsListDiv = document.getElementById('studentsList');
+        const saveBtn = document.getElementById('saveBtn');
+        const msg = document.getElementById('msg');
+        msg.textContent = 'Loading students...';
+        
+        // Hide the save button while loading
+        saveBtn.classList.add('hidden');
+
+        const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (!data.success) {
+                msg.textContent = data.message || "Unable to fetch students";
+                studentsListDiv.innerHTML = '';
+                return;
+            }
+            if (data.students.length > 0) {
+                studentsListDiv.innerHTML = data.students
+                    .map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`)
+                    .join("");
+                saveBtn.classList.remove('hidden'); // Show the save button
+                msg.textContent = '';
+            } else {
+                studentsListDiv.innerHTML = '';
+                msg.textContent = "No students found for this department and year.";
+            }
+
+        } catch (err) {
+            msg.textContent = "Error loading students: " + err;
+            studentsListDiv.innerHTML = '';
+        }
+    }
+
+    async function saveAttendance() {
+        const yr = document.getElementById('year').value;
+        const date = document.getElementById('date').value;
+        const session = document.getElementById('session').value;
+        const selected = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
+        const msg = document.getElementById('msg');
+
+        if (!date) {
+            msg.textContent = "Please select a date.";
+            return;
+        }
+
+        if (selected.length === 0) {
+            msg.textContent = "Please select at least one student.";
+            return;
+        }
+
+        msg.textContent = 'Saving attendance...';
+        
+        const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&session=${encodeURIComponent(session)}&present=${encodeURIComponent(selected.join(','))}`;
 
         try {
             const res = await fetch(url);
@@ -182,7 +453,3 @@
 
 </body>
 </html>
-
-
-
-
