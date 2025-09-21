@@ -34,7 +34,146 @@ button{background:#337ab7;color:#fff;border:none;cursor:pointer;}
 </div>
 
 <script>
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz3a_w2-SWIplHcYxyE3mkQFBOsnvilgxwxunnPH3NSRCMq2Q5-x2-udND_6uLk2p4l/exec; // Replace with Apps Script WebApp URL
+const WEBAPP_URL = "/************************************
+ * === Sheet IDs ===
+ ************************************/
+const STUDENT_SHEET_ID    = "151Lsb3hYit9NTAFfJqaznMwO9oAssOWp0xcBjclr8d4";
+const LEAVE_SHEET_ID      = "1p1KBEM8LqqsXKbrwbD4YlTU-chZww2PqQTG2Z0Tcs5Y";
+const ATTENDANCE_SHEET_ID = "1Mj9yocNaHKw1ngT8R6RkIv1VnB9Md8GFne6-dmc0I00";
+const HOD_SHEET_ID        = "w6c46bbOZ7EbJ2Ofv-VTEQBajmSB_xOaNmkncdSbMlM";
+const PRINCIPAL_SHEET_ID  = "1VbiB-u_0luZUqC7sSSUCCaOvvgOEtZks3EOedVo0d3o";
+
+/************************************
+ * === Helpers ===
+ ************************************/
+function openSheet(id, tab) {
+  if(!id) throw new Error(`Missing spreadsheet ID for tab "${tab}"`);
+  const ss = SpreadsheetApp.openById(id);
+  const sh = ss.getSheetByName(tab);
+  if(!sh) throw new Error(`Sheet "${tab}" not found`);
+  return sh;
+}
+
+function getStudentSheet() { return openSheet(STUDENT_SHEET_ID, "StudentEmails"); }
+function getLeaveSheet()   { return openSheet(LEAVE_SHEET_ID, "LeaveRequests"); }
+function getAttendanceSheet() { return openSheet(ATTENDANCE_SHEET_ID, "Attendance"); }
+function getHODSheet()     { return openSheet(HOD_SHEET_ID, "HODS"); }
+function getPrincipalSheet() { return openSheet(PRINCIPAL_SHEET_ID, "PRINCIPAL"); }
+
+function jsonOut(obj){
+  return ContentService.createTextOutput(JSON.stringify(obj))
+           .setMimeType(ContentService.MimeType.JSON);
+}
+
+/************************************
+ * === Router ===
+ ************************************/
+function doGet(e){
+  try{
+    const action = e.parameter.action;
+    if(!action) return HtmlService.createHtmlOutput("Web App Active");
+
+    if(action==="loginHOD") return loginHOD(e.parameter.email,e.parameter.password);
+    if(action==="getStudents") return getStudents(e.parameter.dept,e.parameter.year);
+    if(action==="saveAttendance") return saveAttendance(e.parameter.dept,e.parameter.year,e.parameter.date,e.parameter.present);
+    if(action==="getUnapprovedAbsentees") return getUnapprovedAbsentees(e.parameter.dept,e.parameter.date);
+    if(action==="loginPrincipal") return loginPrincipal(e.parameter.email,e.parameter.password);
+    if(action==="getPrincipalSummary") return getPrincipalSummary(e.parameter.date);
+
+    return jsonOut({success:false,message:"Invalid action"});
+  }catch(err){
+    return jsonOut({success:false,message:err.message});
+  }
+}
+
+/************************************
+ * === HOD Functions ===
+ ************************************/
+function loginHOD(email, pass){
+  if(!email || !pass) return jsonOut({success:false,message:"Missing email or password"});
+  const data = getHODSheet().getDataRange().getValues();
+  for(let i=1;i<data.length;i++){
+    if((data[i][0]||"").toString().trim()===email &&
+       (data[i][1]||"").toString().trim()===pass){
+      return jsonOut({success:true,message:"HOD login successful", dept:data[i][2]});
+    }
+  }
+  return jsonOut({success:false,message:"Invalid HOD Email or Password"});
+}
+
+function getStudents(dept, year){
+  const students = getStudentSheet().getDataRange().getValues();
+  const result = [];
+  for(let i=1;i<students.length;i++){
+    const [email, roll, yr, sem, d] = students[i];
+    if(d===dept && yr===year) result.push({email, rollno:roll, year:yr, sem, dept:d});
+  }
+  return jsonOut({success:true, students:result});
+}
+
+function saveAttendance(dept, year, date, present){
+  if(!dept || !year || !date) return jsonOut({success:false,message:"Missing parameters"});
+  const attSh = getAttendanceSheet();
+  attSh.appendRow([date, dept, year, present||""]);
+  return jsonOut({success:true,message:"Attendance saved successfully"});
+}
+
+function getUnapprovedAbsentees(dept, date){
+  const leaveData = getLeaveSheet().getDataRange().getValues();
+  const studentData = getStudentSheet().getDataRange().getValues();
+  const allRolls = studentData.slice(1).filter(s=>s[4]===dept).map(s=>s[1]);
+  const leaveRolls = leaveData.slice(1).filter(l=>l[2]===dept && l[3]===date).map(l=>l[0]);
+  const unapproved = allRolls.filter(r=>!leaveRolls.includes(r));
+  return jsonOut({success:true, unapprovedRollnos:unapproved});
+}
+
+/************************************
+ * === Principal Functions ===
+ ************************************/
+function loginPrincipal(email, pass){
+  if(!email || !pass) return jsonOut({success:false,message:"Missing email or password"});
+  const data = getPrincipalSheet().getDataRange().getValues();
+  for(let i=1;i<data.length;i++){
+    if((data[i][0]||"").toString().trim()===email &&
+       (data[i][1]||"").toString().trim()===pass){
+      return jsonOut({success:true,message:"Principal login successful"});
+    }
+  }
+  return jsonOut({success:false,message:"Invalid Principal Email or Password"});
+}
+
+function getPrincipalSummary(date){
+  const studentSh = getStudentSheet();
+  const attSh = getAttendanceSheet();
+  const students = studentSh.getDataRange().getValues();
+  const attendance = attSh.getDataRange().getValues();
+  date = date || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  const out = {};
+
+  // Prepare total students per dept-year
+  for(let i=1;i<students.length;i++){
+    const [email, roll, year, sem, dept] = students[i];
+    if(!dept || !year) continue;
+    const key = `${dept}-${year}`;
+    if(!out[key]) out[key]={total:0,present:0};
+    out[key].total++;
+  }
+
+  // Calculate present students for the given date
+  for(let i=1;i<attendance.length;i++){
+    const [attDate, dept, year, presentStr] = attendance[i];
+    if(!attDate || !dept || !year) continue;
+    const attDateStr = Utilities.formatDate(new Date(attDate), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    if(attDateStr!==date) continue;
+    const presentRolls = (presentStr||"").toString().split(',').map(r=>r.trim()).filter(r=>r);
+    const key = `${dept}-${year}`;
+    if(out[key]) out[key].present += presentRolls.length;
+  }
+
+  return jsonOut({success:true,data:out});
+}
+; // Replace with Apps Script WebApp URL
 const params = new URLSearchParams(window.location.search);
 const dept = params.get("dept")||"";
 
