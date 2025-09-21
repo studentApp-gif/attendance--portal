@@ -2,160 +2,211 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title> SVCE Attendance Portal</title>
+<title>HOD Attendance Portal</title>
 <style>
-    body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 0;
-        background: #f4f4f4;
-    }
-    .container {
-        width: 90%;
-        max-width: 600px;
-        margin: 20px auto;
-        background: #fff;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,.2);
-    }
-    h2 {
-        text-align: center;
-        color: #004d80;
-        margin-bottom: 10px;
-    }
-    .logo {
-        display: block;
-        margin: 20px auto;
-        max-width: 140px;
-        height: auto;
-    }
-    label {
-        display: block;
-        margin: 10px 0 5px;
-    }
-    input, select, button {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-    }
-    button {
-        background: #337ab7;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-    }
-    button:hover {
-        background: #286090;
-    }
-    /* ✅ Roll number left – Checkbox right */
-    #studentsList label {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 6px 0;
-        padding: 6px 10px;
-        background: #f9f9f9;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    #studentsList input[type="checkbox"] {
-        width: 18px;
-        height: 18px;
-        margin: 0;
-    }
-    #msg {
-        text-align: center;
-        font-weight: 500;
-        margin-top: 10px;
-        color: #004d80;
-    }
+body{font-family:sans-serif;margin:0;padding:0;background:#f4f4f4;}
+.container{width:90%;max-width:600px;margin:20px auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 5px rgba(0,0,0,.2);}
+h2{text-align:center;color:#004d80;}
+label{display:block;margin:10px 0 5px;}
+input,select,button{width:100%;padding:10px;margin-bottom:10px;border-radius:4px;border:1px solid #ccc;box-sizing:border-box;}
+button{background:#337ab7;color:#fff;border:none;cursor:pointer;}
+#studentsList label{display:flex;align-items:center;margin:5px 0;}
+#studentsList input[type="checkbox"]{margin-right:10px;}
+#msg{text-align:center;font-weight:500;margin-top:10px;}
 </style>
 </head>
 <body>
-
-<!-- ✅ College Logo -->
-<img src="1615998820020.jpg" alt="College Logo" class="logo">
-
 <div class="container">
-    <h2>Attendance Portal</h2>
-
-    <label for="date">Select Date:</label>
-    <input type="date" id="date">
-
-    <label for="year">Select Year:</label>
-    <select id="year">
-        <option value="2">2nd Year</option>
-        <option value="3">3rd Year</option>
-        <option value="4">4th Year</option>
-    </select>
-
-    <button onclick="loadStudents()">Load Students</button>
-
-    <div id="studentsList"></div>
-
-    <button onclick="saveAttendance()">Save Attendance</button>
-    <p id="msg"></p>
+<h2>Attendance Portal</h2>
+<label for="date">Select Date:</label>
+<input type="date" id="date">
+<label for="year">Select Year:</label>
+<select id="year">
+<option value="2">2nd Year</option>
+<option value="3">3rd Year</option>
+<option value="4">4th Year</option>
+</select>
+<button onclick="loadStudents()">Load Students</button>
+<div id="studentsList"></div>
+<button onclick="saveAttendance()">Save Attendance</button>
+<p id="msg"></p>
 </div>
 
 <script>
-    // ✅ Replace with your Apps Script WebApp URL
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbz3a_w2-SWIplHcYxyE3mkQFBOsnvilgxwxunnPH3NSRCMq2Q5-x2-udND_6uLk2p4l/exec";
+const WEBAPP_URL = "/************************************
+ * === Sheet IDs ===
+ ************************************/
+const STUDENT_SHEET_ID    = "151Lsb3hYit9NTAFfJqaznMwO9oAssOWp0xcBjclr8d4";
+const LEAVE_SHEET_ID      = "1p1KBEM8LqqsXKbrwbD4YlTU-chZww2PqQTG2Z0Tcs5Y";
+const ATTENDANCE_SHEET_ID = "1Mj9yocNaHKw1ngT8R6RkIv1VnB9Md8GFne6-dmc0I00";
+const HOD_SHEET_ID        = "w6c46bbOZ7EbJ2Ofv-VTEQBajmSB_xOaNmkncdSbMlM";
+const PRINCIPAL_SHEET_ID  = "1VbiB-u_0luZUqC7sSSUCCaOvvgOEtZks3EOedVo0d3o";
 
-    const params = new URLSearchParams(window.location.search);
-    const dept = params.get("dept") || "";
+/************************************
+ * === Helpers ===
+ ************************************/
+function openSheet(id, tab) {
+  if(!id) throw new Error(`Missing spreadsheet ID for tab "${tab}"`);
+  const ss = SpreadsheetApp.openById(id);
+  const sh = ss.getSheetByName(tab);
+  if(!sh) throw new Error(`Sheet "${tab}" not found`);
+  return sh;
+}
 
-    document.addEventListener('DOMContentLoaded', () => {
-        document.getElementById('date').value = new Date().toISOString().split('T')[0];
-    });
+function getStudentSheet() { return openSheet(STUDENT_SHEET_ID, "StudentEmails"); }
+function getLeaveSheet()   { return openSheet(LEAVE_SHEET_ID, "LeaveRequests"); }
+function getAttendanceSheet() { return openSheet(ATTENDANCE_SHEET_ID, "Attendance"); }
+function getHODSheet()     { return openSheet(HOD_SHEET_ID, "HODS"); }
+function getPrincipalSheet() { return openSheet(PRINCIPAL_SHEET_ID, "PRINCIPAL"); }
 
-    async function loadStudents() {
-        const yr = document.getElementById('year').value;
-        const studentsListDiv = document.getElementById('studentsList');
-        const msg = document.getElementById('msg');
-        msg.textContent = 'Loading...';
-        try {
-            const res = await fetch(`${WEBAPP_URL}?action=getStudents&dept=${dept}&year=${yr}`);
-            const data = await res.json();
-            if (!data.success) {
-                msg.textContent = data.message;
-                return;
-            }
-            studentsListDiv.innerHTML = data.students
-                .map(s =>
-                    `<label>
-                        <span>${s.rollno}</span>
-                        <input type="checkbox" value="${s.rollno}">
-                    </label>`
-                ).join("");
-            msg.textContent = '';
-        } catch (err) {
-            msg.textContent = 'Error: ' + err;
-        }
+function jsonOut(obj){
+  return ContentService.createTextOutput(JSON.stringify(obj))
+           .setMimeType(ContentService.MimeType.JSON);
+}
+
+/************************************
+ * === Router ===
+ ************************************/
+function doGet(e){
+  try{
+    const action = e.parameter.action;
+    if(!action) return HtmlService.createHtmlOutput("Web App Active");
+
+    if(action==="loginHOD") return loginHOD(e.parameter.email,e.parameter.password);
+    if(action==="getStudents") return getStudents(e.parameter.dept,e.parameter.year);
+    if(action==="saveAttendance") return saveAttendance(e.parameter.dept,e.parameter.year,e.parameter.date,e.parameter.present);
+    if(action==="getUnapprovedAbsentees") return getUnapprovedAbsentees(e.parameter.dept,e.parameter.date);
+    if(action==="loginPrincipal") return loginPrincipal(e.parameter.email,e.parameter.password);
+    if(action==="getPrincipalSummary") return getPrincipalSummary(e.parameter.date);
+
+    return jsonOut({success:false,message:"Invalid action"});
+  }catch(err){
+    return jsonOut({success:false,message:err.message});
+  }
+}
+
+/************************************
+ * === HOD Functions ===
+ ************************************/
+function loginHOD(email, pass){
+  if(!email || !pass) return jsonOut({success:false,message:"Missing email or password"});
+  const data = getHODSheet().getDataRange().getValues();
+  for(let i=1;i<data.length;i++){
+    if((data[i][0]||"").toString().trim()===email &&
+       (data[i][1]||"").toString().trim()===pass){
+      return jsonOut({success:true,message:"HOD login successful", dept:data[i][2]});
     }
+  }
+  return jsonOut({success:false,message:"Invalid HOD Email or Password"});
+}
 
-    async function saveAttendance() {
-        const date = document.getElementById('date').value;
-        const yr = document.getElementById('year').value;
-        const present = [...document.querySelectorAll('#studentsList input:checked')]
-            .map(c => c.value).join(',');
-        if (!present) {
-            document.getElementById('msg').textContent = "No student selected!";
-            return;
-        }
-        const msg = document.getElementById('msg');
-        msg.textContent = 'Saving...';
-        try {
-            const res = await fetch(`${WEBAPP_URL}?action=saveAttendance&dept=${dept}&year=${yr}&date=${date}&present=${present}`);
-            const j = await res.json();
-            msg.textContent = j.message || "Attendance saved successfully!";
-        } catch (err) {
-            msg.textContent = 'Error: ' + err;
-        }
+function getStudents(dept, year){
+  const students = getStudentSheet().getDataRange().getValues();
+  const result = [];
+  for(let i=1;i<students.length;i++){
+    const [email, roll, yr, sem, d] = students[i];
+    if(d===dept && yr===year) result.push({email, rollno:roll, year:yr, sem, dept:d});
+  }
+  return jsonOut({success:true, students:result});
+}
+
+function saveAttendance(dept, year, date, present){
+  if(!dept || !year || !date) return jsonOut({success:false,message:"Missing parameters"});
+  const attSh = getAttendanceSheet();
+  attSh.appendRow([date, dept, year, present||""]);
+  return jsonOut({success:true,message:"Attendance saved successfully"});
+}
+
+function getUnapprovedAbsentees(dept, date){
+  const leaveData = getLeaveSheet().getDataRange().getValues();
+  const studentData = getStudentSheet().getDataRange().getValues();
+  const allRolls = studentData.slice(1).filter(s=>s[4]===dept).map(s=>s[1]);
+  const leaveRolls = leaveData.slice(1).filter(l=>l[2]===dept && l[3]===date).map(l=>l[0]);
+  const unapproved = allRolls.filter(r=>!leaveRolls.includes(r));
+  return jsonOut({success:true, unapprovedRollnos:unapproved});
+}
+
+/************************************
+ * === Principal Functions ===
+ ************************************/
+function loginPrincipal(email, pass){
+  if(!email || !pass) return jsonOut({success:false,message:"Missing email or password"});
+  const data = getPrincipalSheet().getDataRange().getValues();
+  for(let i=1;i<data.length;i++){
+    if((data[i][0]||"").toString().trim()===email &&
+       (data[i][1]||"").toString().trim()===pass){
+      return jsonOut({success:true,message:"Principal login successful"});
     }
+  }
+  return jsonOut({success:false,message:"Invalid Principal Email or Password"});
+}
+
+function getPrincipalSummary(date){
+  const studentSh = getStudentSheet();
+  const attSh = getAttendanceSheet();
+  const students = studentSh.getDataRange().getValues();
+  const attendance = attSh.getDataRange().getValues();
+  date = date || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+
+  const out = {};
+
+  // Prepare total students per dept-year
+  for(let i=1;i<students.length;i++){
+    const [email, roll, year, sem, dept] = students[i];
+    if(!dept || !year) continue;
+    const key = `${dept}-${year}`;
+    if(!out[key]) out[key]={total:0,present:0};
+    out[key].total++;
+  }
+
+  // Calculate present students for the given date
+  for(let i=1;i<attendance.length;i++){
+    const [attDate, dept, year, presentStr] = attendance[i];
+    if(!attDate || !dept || !year) continue;
+    const attDateStr = Utilities.formatDate(new Date(attDate), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    if(attDateStr!==date) continue;
+    const presentRolls = (presentStr||"").toString().split(',').map(r=>r.trim()).filter(r=>r);
+    const key = `${dept}-${year}`;
+    if(out[key]) out[key].present += presentRolls.length;
+  }
+
+  return jsonOut({success:true,data:out});
+}
+; // Replace with Apps Script WebApp URL
+const params = new URLSearchParams(window.location.search);
+const dept = params.get("dept")||"";
+
+document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+});
+
+async function loadStudents(){
+    const yr = document.getElementById('year').value;
+    const studentsListDiv = document.getElementById('studentsList');
+    const msg = document.getElementById('msg');
+    msg.textContent = 'Loading...';
+    try{
+        const res = await fetch(`${WEBAPP_URL}?action=getStudents&dept=${dept}&year=${yr}`);
+        const data = await res.json();
+        if(!data.success){msg.textContent=data.message; return;}
+        studentsListDiv.innerHTML = data.students.map(s=>`<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`).join("");
+        msg.textContent = '';
+    }catch(err){msg.textContent='Error: '+err;}
+}
+
+async function saveAttendance(){
+    const date = document.getElementById('date').value;
+    const yr   = document.getElementById('year').value;
+    const present = [...document.querySelectorAll('#studentsList input:checked')].map(c=>c.value).join(',');
+    if(!present){document.getElementById('msg').textContent="No student selected!"; return;}
+    const msg = document.getElementById('msg');
+    msg.textContent = 'Saving...';
+    try{
+        const res = await fetch(`${WEBAPP_URL}?action=saveAttendance&dept=${dept}&year=${yr}&date=${date}&present=${present}`);
+        const j = await res.json();
+        msg.textContent = j.message || "Attendance saved successfully!";
+    }catch(err){msg.textContent='Error: '+err;}
+}
 </script>
 </body>
 </html>
