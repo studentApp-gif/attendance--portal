@@ -17,7 +17,6 @@
             --text-dark: #333;
             --text-light: #fff;
         }
-
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
@@ -29,7 +28,6 @@
             align-items: flex-start;
             min-height: 100vh;
         }
-
         .container {
             width: 90%;
             max-width: 600px;
@@ -39,40 +37,33 @@
             border-radius: 8px;
             overflow: hidden;
         }
-
         header {
             background-color: var(--primary-color);
             color: var(--text-light);
             padding: 20px;
             text-align: center;
         }
-
         header h1 {
             margin: 0;
             font-weight: 500;
         }
-
         .content {
             padding: 20px;
         }
-
         h2 {
             text-align: center;
             color: var(--accent-color);
             font-weight: 500;
             margin-bottom: 20px;
         }
-
         .form-group {
             margin-bottom: 15px;
         }
-
         label {
             display: block;
             margin-bottom: 5px;
             font-weight: 500;
         }
-
         select, button {
             width: 100%;
             padding: 10px;
@@ -81,7 +72,14 @@
             box-sizing: border-box;
             font-size: 16px;
         }
-
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
         button {
             background-color: var(--accent-color);
             color: var(--text-light);
@@ -89,59 +87,26 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-        
         button:hover {
             background-color: #286090;
         }
-
         button:active {
             background-color: #1a476f;
             transform: translateY(1px);
         }
-
-        #studentsList {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        #studentsList label {
+        .input-group {
             display: flex;
-            align-items: center;
-            margin: 8px 0;
-            font-size: 14px;
-            cursor: pointer;
+            gap: 15px;
+            justify-content: space-between;
         }
-
-        #studentsList input[type="checkbox"] {
-            margin-right: 10px;
-            transform: scale(1.2);
-            cursor: pointer;
+        .input-group .form-group {
+            flex: 1;
         }
-
         #msg {
             text-align: center;
             margin-top: 15px;
             font-weight: 500;
         }
-        
-        #unapprovedList {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #d9534f;
-            border-radius: 4px;
-            background-color: #fce4e4;
-            color: #d9534f;
-        }
-        
-        #unapprovedList h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-        }
-        
         .hidden {
             display: none;
         }
@@ -156,7 +121,6 @@
 
     <div class="content">
         <h2>Student Attendance Portal</h2>
-
         <div class="form-group">
             <label for="year">Select Year:</label>
             <select id="year">
@@ -165,16 +129,18 @@
                 <option value="4">4th Year</option>
             </select>
         </div>
-
-        <button onclick="loadStudents()">Load Students</button>
-
-        <div id="studentsList"></div>
-
-        <button onclick="saveAttendance()">Save Attendance</button>
-
+        <div class="input-group">
+            <div class="form-group">
+                <label for="boysCount">Present Boys:</label>
+                <input type="number" id="boysCount" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="girlsCount">Present Girls:</label>
+                <input type="number" id="girlsCount" min="0" value="0">
+            </div>
+        </div>
+        <button onclick="saveAttendanceCount()">Save Attendance</button>
         <p id="msg"></p>
-        
-        <div id="unapprovedList" class="hidden"></div>
     </div>
 </div>
 
@@ -182,81 +148,24 @@
     const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwleqAyA2QNzUeRGAUIlhkm3ceJGi1bsdoSfe7x5D_PlsKyUeuFTDw2Ep8tWHaAAFCD/exec";
 
     const params = new URLSearchParams(window.location.search);
-    const dept = params.get("dept") || "";
+    const dept = params.get("dept") || "CSM"; // Set a default department for testing
 
-    async function loadStudents(){
-        const yr = document.getElementById('year').value;
-        const studentsListDiv = document.getElementById('studentsList');
-        const msg = document.getElementById('msg');
-        const unapprovedListDiv = document.getElementById('unapprovedList');
-        
-        msg.textContent = 'Loading students...';
-        unapprovedListDiv.classList.add('hidden');
-        
-        const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
-        
-        try {
-            const res = await fetch(url);
-            const data = await res.json();
-            
-            if (!data.success) {
-                msg.textContent = data.message;
-                studentsListDiv.innerHTML = '';
-                return;
-            }
-            
-            studentsListDiv.innerHTML = data.students
-                .map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`)
-                .join("");
-            
-            msg.textContent = '';
-            
-        } catch(err){
-            msg.textContent = "Error loading students: " + err;
-            studentsListDiv.innerHTML = '';
-        }
-    }
-
-    async function saveAttendance(){
+    async function saveAttendanceCount(){
         const date = new Date().toISOString().split('T')[0];
         const yr = document.getElementById('year').value;
-        const presentStudents = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
+        const boysCount = document.getElementById('boysCount').value;
+        const girlsCount = document.getElementById('girlsCount').value;
         
-        const url = `${WEBAPP_URL}?action=saveAttendance&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&present=${encodeURIComponent(presentStudents.join(','))}`;
+        const url = `${WEBAPP_URL}?action=saveAttendanceCount&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&boys=${encodeURIComponent(boysCount)}&girls=${encodeURIComponent(girlsCount)}`;
         const msg = document.getElementById('msg');
         msg.textContent = 'Saving attendance...';
 
         try {
             const res = await fetch(url);
             const j = await res.json();
-            msg.innerText = j.message || j.error;
-            
-            await displayUnapprovedAbsentees(dept, yr);
-
+            msg.innerText = j.message || j.error || 'Attendance saved successfully!';
         } catch(err){
             msg.textContent = "Error saving attendance: " + err;
-        }
-    }
-
-    async function displayUnapprovedAbsentees(dept, year) {
-        const date = new Date().toISOString().split('T')[0];
-        const unapprovedListDiv = document.getElementById('unapprovedList');
-        
-        try {
-            const res = await fetch(`${WEBAPP_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}&date=${encodeURIComponent(date)}`);
-            const json = await res.json();
-            
-            if (json.success && json.unapprovedRollnos.length > 0) {
-                unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>${json.unapprovedRollnos.join(', ')}</p>`;
-                unapprovedListDiv.classList.remove('hidden');
-            } else {
-                unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>No unapproved absentees for this year.</p>`;
-                unapprovedListDiv.classList.remove('hidden');
-            }
-        } catch(err) {
-            unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>Error loading list.</p>`;
-            unapprovedListDiv.classList.remove('hidden');
-            console.error("Error fetching unapproved absentees:", err);
         }
     }
 </script>
