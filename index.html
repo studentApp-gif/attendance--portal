@@ -147,11 +147,9 @@
 </div>
 
 <script>
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyDnRUy3PRIlp-K_fFlPMDWWc0yo5DX1JAxNeebD6IJuQRVzyfVf5JLZ9MGwwu1pToy/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBbIZip4h0rVguzfEGW3LBeyd70KDig5kjaKspHVM7kXHuxEcm0wX_X1IE69uphwhm/exec"; // Ensure this URL is correct
     const params = new URLSearchParams(window.location.search);
     const dept = params.get("dept") || "CSE"; // Default to a department for testing
-
-    const HOD_EMAIL = "your.hod@svce.edu"; // To be replaced with a dynamic value
 
     async function loadAttendanceForm() {
         const yr = document.getElementById('year').value;
@@ -164,24 +162,10 @@
         formDiv.classList.remove('hidden');
         saveBtn.classList.remove('hidden');
 
-        // Check if the department uses the count method
-        if (['CSE', 'ECE', 'EEE'].includes(dept) || dept.includes('(HS)')) {
-             formDiv.innerHTML = `
-                <div class="input-group">
-                    <div class="form-group">
-                        <label for="boysCount">Present Boys:</label>
-                        <input type="number" id="boysCount" min="0" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="girlsCount">Present Girls:</label>
-                        <input type="number" id="girlsCount" min="0" value="0">
-                    </div>
-                </div>
-            `;
-            msg.textContent = 'Enter attendance counts for this class.';
-        } else if (dept === 'CSM') {
+        // Check if the department is CSM
+        if (dept === 'CSM') {
             msg.textContent = 'Loading students...';
-            const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
+            const url = `${SCRIPT_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
@@ -203,6 +187,22 @@
                 msg.textContent = "Error loading students: " + err;
                 saveBtn.classList.add('hidden');
             }
+        } 
+        // All other departments use count-based attendance
+        else {
+             formDiv.innerHTML = `
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="boysCount">Present Boys:</label>
+                        <input type="number" id="boysCount" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="girlsCount">Present Girls:</label>
+                        <input type="number" id="girlsCount" min="0" value="0">
+                    </div>
+                </div>
+            `;
+            msg.textContent = 'Enter attendance counts for this class.';
         }
     }
 
@@ -213,17 +213,17 @@
 
         msg.textContent = 'Saving attendance...';
         
-        if (['CSE', 'ECE', 'EEE'].includes(dept) || dept.includes('(HS)')) {
-             await saveAttendanceByCount(dept, yr, date);
-        } else if (dept === 'CSM') {
+        if (dept === 'CSM') {
             await saveAttendanceByRollNo(dept, yr, date);
+        } else {
+            await saveAttendanceByCount(dept, yr, date);
         }
     }
 
     async function saveAttendanceByCount(dept, yr, date) {
         const boysCount = document.getElementById('boysCount').value;
         const girlsCount = document.getElementById('girlsCount').value;
-        const url = `${WEBAPP_URL}?action=saveAttendanceCount&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&boys=${encodeURIComponent(boysCount)}&girls=${encodeURIComponent(girlsCount)}`;
+        const url = `${SCRIPT_URL}?action=saveAttendanceCount&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&boys=${encodeURIComponent(boysCount)}&girls=${encodeURIComponent(girlsCount)}`;
         try {
             const res = await fetch(url);
             const j = await res.json();
@@ -234,12 +234,10 @@
     }
 
     async function saveAttendanceByRollNo(dept, yr, date) {
-        // Get all students
         const allStudents = [...document.querySelectorAll('#studentsList input')].map(c => c.value);
-        // Get only the students that were marked as ABSENT (unchecked)
         const absentStudents = allStudents.filter(roll => !document.querySelector(`input[value="${roll}"]:checked`));
 
-        const url = `${WEBAPP_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absent=${encodeURIComponent(absentStudents.join(','))}`;
+        const url = `${SCRIPT_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absent=${encodeURIComponent(absentStudents.join(','))}`;
         try {
             const res = await fetch(url);
             const j = await res.json();
@@ -256,7 +254,7 @@
         if (!unapprovedListDiv) return;
         
         try {
-            const res = await fetch(`${WEBAPP_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}&date=${encodeURIComponent(date)}`);
+            const res = await fetch(`${SCRIPT_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}&date=${encodeURIComponent(date)}`);
             const json = await res.json();
             
             if (json.success && json.unapprovedRollnos.length > 0) {
