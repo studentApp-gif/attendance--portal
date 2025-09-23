@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Student Attendance Portal | SVCE, Kadapa</title>
+    <title>Student Attendance Portal | SVCE, Kadapa</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,9 +11,9 @@
     
     <style>
         :root {
-            --primary-color: #004d80; /* Dark Blue */
-            --secondary-color: #f2f2f2; /* Light Gray */
-            --accent-color: #337ab7; /* Lighter Blue */
+            --primary-color: #004d80;
+            --secondary-color: #f2f2f2;
+            --accent-color: #337ab7;
             --text-dark: #333;
             --text-light: #fff;
         }
@@ -43,7 +43,7 @@
             padding: 20px;
             text-align: center;
         }
-        header h1 {
+        h1 {
             margin: 0;
             font-weight: 500;
         }
@@ -64,15 +64,7 @@
             margin-bottom: 5px;
             font-weight: 500;
         }
-        select, button {
-            width: 100%;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        input[type="number"] {
+        select, button, input[type="number"] {
             width: 100%;
             padding: 10px;
             border-radius: 4px;
@@ -86,30 +78,44 @@
             border: none;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            margin-top: 10px;
         }
-        button:hover {
-            background-color: #286090;
+        button:hover { background-color: #286090; }
+        button:active { background-color: #1a476f; transform: translateY(1px); }
+        #attendanceForm { margin-top: 20px; }
+        #studentsList {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        button:active {
-            background-color: #1a476f;
-            transform: translateY(1px);
-        }
-        .input-group {
+        #studentsList label {
             display: flex;
-            gap: 15px;
-            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 14px;
+            cursor: pointer;
         }
-        .input-group .form-group {
-            flex: 1;
+        #studentsList input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+            cursor: pointer;
         }
-        #msg {
-            text-align: center;
-            margin-top: 15px;
-            font-weight: 500;
+        #unapprovedList {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #d9534f;
+            border-radius: 4px;
+            background-color: #fce4e4;
+            color: #d9534f;
         }
-        .hidden {
-            display: none;
+        #unapprovedList h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
         }
+        #msg { text-align: center; margin-top: 15px; font-weight: 500; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
@@ -118,9 +124,9 @@
     <header>
         <h1>Sri Venkateswara College of Engineering, Kadapa</h1>
     </header>
-
     <div class="content">
         <h2>Student Attendance Portal</h2>
+
         <div class="form-group">
             <label for="year">Select Year:</label>
             <select id="year">
@@ -129,47 +135,141 @@
                 <option value="4">4th Year</option>
             </select>
         </div>
-        <div class="input-group">
-            <div class="form-group">
-                <label for="boysCount">Present Boys:</label>
-                <input type="number" id="boysCount" min="0" value="0">
+
+        <button onclick="loadAttendanceForm()">Load Attendance</button>
+
+        <div id="attendanceForm" class="hidden">
             </div>
-            <div class="form-group">
-                <label for="girlsCount">Present Girls:</label>
-                <input type="number" id="girlsCount" min="0" value="0">
-            </div>
-        </div>
-        <button onclick="saveAttendanceCount()">Save Attendance</button>
+        
+        <button id="saveBtn" onclick="submitAttendance()" class="hidden">Save Attendance</button>
         <p id="msg"></p>
     </div>
 </div>
 
 <script>
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzGSue8QPIUgKQ0J7NZGT3jPHonhykWxyn0WlKhWBxACqJM9q5kYrVS3-c1NeZSj5uO/exec";
-
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwleqAyA2QNzUeRGAUIlhkm3ceJGi1bsdoSfe7x5D_PlsKyUeuFTDw2Ep8tWHaAAFCD/exec";
     const params = new URLSearchParams(window.location.search);
-    const dept = params.get("dept") || "CSM"; // Set a default department for testing
+    const dept = params.get("dept") || "CSE"; // Default to a department for testing
 
-    async function saveAttendanceCount(){
-        const date = new Date().toISOString().split('T')[0];
+    const HOD_EMAIL = "your.hod@svce.edu"; // To be replaced with a dynamic value
+
+    async function loadAttendanceForm() {
         const yr = document.getElementById('year').value;
+        const msg = document.getElementById('msg');
+        const formDiv = document.getElementById('attendanceForm');
+        const saveBtn = document.getElementById('saveBtn');
+
+        msg.textContent = 'Loading form...';
+        formDiv.innerHTML = '';
+        formDiv.classList.remove('hidden');
+        saveBtn.classList.remove('hidden');
+
+        // Check if the department is CSE(HS), ECE(HS), CSM(HS)
+        // or any other department that uses the count method
+        if (dept.includes('(HS)') || ['CSE', 'ECE', 'EEE'].includes(dept)) {
+             formDiv.innerHTML = `
+                <div class="input-group">
+                    <div class="form-group">
+                        <label for="boysCount">Present Boys:</label>
+                        <input type="number" id="boysCount" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="girlsCount">Present Girls:</label>
+                        <input type="number" id="girlsCount" min="0" value="0">
+                    </div>
+                </div>
+            `;
+            msg.textContent = 'Enter attendance counts for this class.';
+        } else if (dept === 'CSM') {
+            msg.textContent = 'Loading students...';
+            const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (!data.success) {
+                    msg.textContent = data.message || "Unable to fetch students";
+                    return;
+                }
+                if (data.students.length > 0) {
+                    formDiv.innerHTML = `<div id="studentsList">` +
+                        data.students.map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`).join("") +
+                        `</div><div id="unapprovedList" class="hidden"></div>`;
+                    msg.textContent = 'Mark present students and save.';
+                } else {
+                    formDiv.innerHTML = '';
+                    msg.textContent = "No students found for this department and year.";
+                    saveBtn.classList.add('hidden');
+                }
+            } catch (err) {
+                msg.textContent = "Error loading students: " + err;
+                saveBtn.classList.add('hidden');
+            }
+        }
+    }
+
+    async function submitAttendance() {
+        const yr = document.getElementById('year').value;
+        const date = new Date().toISOString().split('T')[0];
+        const msg = document.getElementById('msg');
+
+        msg.textContent = 'Saving attendance...';
+        
+        if (dept.includes('(HS)') || ['CSE', 'ECE', 'EEE'].includes(dept)) {
+             await saveAttendanceByCount(dept, yr, date);
+        } else if (dept === 'CSM') {
+            await saveAttendanceByRollNo(dept, yr, date);
+        }
+    }
+
+    async function saveAttendanceByCount(dept, yr, date) {
         const boysCount = document.getElementById('boysCount').value;
         const girlsCount = document.getElementById('girlsCount').value;
-        
         const url = `${WEBAPP_URL}?action=saveAttendanceCount&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&boys=${encodeURIComponent(boysCount)}&girls=${encodeURIComponent(girlsCount)}`;
-        const msg = document.getElementById('msg');
-        msg.textContent = 'Saving attendance...';
-
         try {
             const res = await fetch(url);
             const j = await res.json();
             msg.innerText = j.message || j.error || 'Attendance saved successfully!';
-        } catch(err){
+        } catch (err) {
             msg.textContent = "Error saving attendance: " + err;
+        }
+    }
+
+    async function saveAttendanceByRollNo(dept, yr, date) {
+        const presentStudents = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
+        const url = `${WEBAPP_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&present=${encodeURIComponent(presentStudents.join(','))}`;
+        try {
+            const res = await fetch(url);
+            const j = await res.json();
+            msg.innerText = j.message || j.error || 'Attendance saved successfully!';
+            await displayUnapprovedAbsentees(dept, yr);
+        } catch (err) {
+            msg.textContent = "Error saving attendance: " + err;
+        }
+    }
+
+    async function displayUnapprovedAbsentees(dept, year) {
+        const date = new Date().toISOString().split('T')[0];
+        const unapprovedListDiv = document.getElementById('unapprovedList');
+        if (!unapprovedListDiv) return;
+        
+        try {
+            const res = await fetch(`${WEBAPP_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}&date=${encodeURIComponent(date)}`);
+            const json = await res.json();
+            
+            if (json.success && json.unapprovedRollnos.length > 0) {
+                unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>${json.unapprovedRollnos.join(', ')}</p>`;
+                unapprovedListDiv.classList.remove('hidden');
+            } else {
+                unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>No unapproved absentees for this year.</p>`;
+                unapprovedListDiv.classList.remove('hidden');
+            }
+        } catch(err) {
+            unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>Error loading list.</p>`;
+            unapprovedListDiv.classList.remove('hidden');
+            console.error("Error fetching unapproved absentees:", err);
         }
     }
 </script>
 
 </body>
 </html>
-
