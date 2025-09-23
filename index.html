@@ -147,7 +147,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMRWFNnV9JFNsWYDiC0LydGQdUf3i9YXHYgBt6vVYxDWUaYDjY6f1UkGfoeKeucOPi/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxtGnW8H80idRVxQGbRHZcpgifYQyUTvbEaQAwTzYrauctCywQnU7jiCCNZUNeMjI8w/exec";
     const params = new URLSearchParams(window.location.search);
     const dept = params.get("dept") || "CSE";
 
@@ -173,7 +173,18 @@
                     return;
                 }
                 if (data.students.length > 0) {
-                    formDiv.innerHTML = `<div id="studentsList">` +
+                    formDiv.innerHTML = `
+                        <div class="input-group">
+                            <div class="form-group">
+                                <label for="boysTotal">Total Boys:</label>
+                                <input type="number" id="boysTotal" min="0" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="girlsTotal">Total Girls:</label>
+                                <input type="number" id="girlsTotal" min="0" value="0">
+                            </div>
+                        </div>
+                        <div id="studentsList">` +
                         data.students.map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`).join("") +
                         `</div><div id="unapprovedList" class="hidden"></div>`;
                     msg.textContent = 'Mark absent students and save.';
@@ -186,8 +197,7 @@
                 msg.textContent = "Error loading students: " + err;
                 saveBtn.classList.add('hidden');
             }
-        } 
-        else {
+        } else {
              formDiv.innerHTML = `
                 <div class="input-group">
                     <div class="form-group">
@@ -232,10 +242,12 @@
     }
 
     async function saveAttendanceByRollNo(dept, yr, date) {
+        const boysTotal = document.getElementById('boysTotal').value;
+        const girlsTotal = document.getElementById('girlsTotal').value;
         const allStudents = [...document.querySelectorAll('#studentsList input')].map(c => c.value);
         const absentStudents = allStudents.filter(roll => !document.querySelector(`input[value="${roll}"]:checked`));
 
-        const url = `${SCRIPT_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absent=${encodeURIComponent(absentStudents.join(','))}`;
+        const url = `${SCRIPT_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absent=${encodeURIComponent(absentStudents.join(','))}&boysTotal=${encodeURIComponent(boysTotal)}&girlsTotal=${encodeURIComponent(girlsTotal)}`;
         try {
             const res = await fetch(url);
             const j = await res.json();
