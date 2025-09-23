@@ -147,7 +147,7 @@
 </div>
 
 <script>
-    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzboBiCgRbYBsomYxcQA3LjoPf0ebtwvJZAMi82-FVx4_3pNzoqXdpPFqMMSquzlo0/exec";
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyDnRUy3PRIlp-K_fFlPMDWWc0yo5DX1JAxNeebD6IJuQRVzyfVf5JLZ9MGwwu1pToy/exec";
     const params = new URLSearchParams(window.location.search);
     const dept = params.get("dept") || "CSE"; // Default to a department for testing
 
@@ -164,9 +164,8 @@
         formDiv.classList.remove('hidden');
         saveBtn.classList.remove('hidden');
 
-        // Check if the department is CSE(HS), ECE(HS), CSM(HS)
-        // or any other department that uses the count method
-        if (dept.includes('(HS)') || ['CSE', 'ECE', 'EEE'].includes(dept)) {
+        // Check if the department uses the count method
+        if (['CSE', 'ECE', 'EEE'].includes(dept) || dept.includes('(HS)')) {
              formDiv.innerHTML = `
                 <div class="input-group">
                     <div class="form-group">
@@ -194,7 +193,7 @@
                     formDiv.innerHTML = `<div id="studentsList">` +
                         data.students.map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`).join("") +
                         `</div><div id="unapprovedList" class="hidden"></div>`;
-                    msg.textContent = 'Mark present students and save.';
+                    msg.textContent = 'Mark absent students and save.';
                 } else {
                     formDiv.innerHTML = '';
                     msg.textContent = "No students found for this department and year.";
@@ -214,7 +213,7 @@
 
         msg.textContent = 'Saving attendance...';
         
-        if (dept.includes('(HS)') || ['CSE', 'ECE', 'EEE'].includes(dept)) {
+        if (['CSE', 'ECE', 'EEE'].includes(dept) || dept.includes('(HS)')) {
              await saveAttendanceByCount(dept, yr, date);
         } else if (dept === 'CSM') {
             await saveAttendanceByRollNo(dept, yr, date);
@@ -235,8 +234,12 @@
     }
 
     async function saveAttendanceByRollNo(dept, yr, date) {
-        const presentStudents = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
-        const url = `${WEBAPP_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&present=${encodeURIComponent(presentStudents.join(','))}`;
+        // Get all students
+        const allStudents = [...document.querySelectorAll('#studentsList input')].map(c => c.value);
+        // Get only the students that were marked as ABSENT (unchecked)
+        const absentStudents = allStudents.filter(roll => !document.querySelector(`input[value="${roll}"]:checked`));
+
+        const url = `${WEBAPP_URL}?action=saveAttendanceByRollNo&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}&date=${encodeURIComponent(date)}&absent=${encodeURIComponent(absentStudents.join(','))}`;
         try {
             const res = await fetch(url);
             const j = await res.json();
@@ -273,4 +276,3 @@
 
 </body>
 </html>
-
