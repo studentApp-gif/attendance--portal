@@ -147,9 +147,9 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzBbIZip4h0rVguzfEGW3LBeyd70KDig5kjaKspHVM7kXHuxEcm0wX_X1IE69uphwhm/exec"; // Ensure this URL is correct
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMRWFNnV9JFNsWYDiC0LydGQdUf3i9YXHYgBt6vVYxDWUaYDjY6f1UkGfoeKeucOPi/exec";
     const params = new URLSearchParams(window.location.search);
-    const dept = params.get("dept") || "CSE"; // Default to a department for testing
+    const dept = params.get("dept") || "CSE";
 
     async function loadAttendanceForm() {
         const yr = document.getElementById('year').value;
@@ -162,7 +162,6 @@
         formDiv.classList.remove('hidden');
         saveBtn.classList.remove('hidden');
 
-        // Check if the department is CSM
         if (dept === 'CSM') {
             msg.textContent = 'Loading students...';
             const url = `${SCRIPT_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
@@ -188,7 +187,6 @@
                 saveBtn.classList.add('hidden');
             }
         } 
-        // All other departments use count-based attendance
         else {
              formDiv.innerHTML = `
                 <div class="input-group">
