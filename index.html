@@ -103,22 +103,6 @@
         .hidden {
             display: none;
         }
-        #unapprovedList {
-            margin-top: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #fce4e4; /* Light red background */
-            color: #d9534f; /* Dark red text */
-        }
-        #unapprovedList h3 {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-        }
-        #unapprovedList p {
-            margin: 0;
-            font-weight: 500;
-        }
     </style>
 </head>
 <body>
@@ -144,7 +128,6 @@
         <button onclick="loadStudents()">Load Students</button>
 
         <div id="studentsList"></div>
-        <div id="unapprovedList" class="hidden"></div>
 
         <button id="saveBtn" onclick="saveAttendance()" class="hidden">Save Attendance</button>
 
@@ -165,13 +148,10 @@
         const studentsListDiv = document.getElementById('studentsList');
         const saveBtn = document.getElementById('saveBtn');
         const msg = document.getElementById('msg');
-        const unapprovedListDiv = document.getElementById('unapprovedList');
-
         msg.textContent = 'Loading students...';
         
-        // Hide the save button and unapproved list while loading
+        // Hide the save button while loading
         saveBtn.classList.add('hidden');
-        unapprovedListDiv.classList.add('hidden');
 
         const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
 
@@ -194,9 +174,6 @@
                 msg.textContent = "No students found for this department and year.";
             }
 
-            // After loading students, check for unapproved absentees
-            await displayUnapprovedAbsentees(dept, yr);
-
         } catch (err) {
             msg.textContent = "Error loading students: " + err;
             studentsListDiv.innerHTML = '';
@@ -207,7 +184,6 @@
         const yr = document.getElementById('year').value;
         const selected = [...document.querySelectorAll('#studentsList input:checked')].map(c => c.value);
         const msg = document.getElementById('msg');
-        const unapprovedListDiv = document.getElementById('unapprovedList');
 
         if (selected.length === 0) {
             msg.textContent = "Please select at least one student.";
@@ -228,35 +204,10 @@
             const res = await fetch(url);
             const data = await res.json();
             msg.textContent = data.message || data.error || 'Saved!';
-            // After saving, reload the unapproved list to reflect changes
-            await displayUnapprovedAbsentees(dept, yr);
-
         } catch (err) {
             msg.textContent = "Error saving attendance: " + err;
         }
     }
-
-    async function displayUnapprovedAbsentees(dept, year) {
-        const date = new Date().toISOString().slice(0, 10);
-        const unapprovedListDiv = document.getElementById('unapprovedList');
-        
-        try {
-            const res = await fetch(`${WEBAPP_URL}?action=getUnapprovedAbsentees&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(year)}&date=${encodeURIComponent(date)}`);
-            const json = await res.json();
-            
-            if (json.success && json.unapprovedRollnos.length > 0) {
-                unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>${json.unapprovedRollnos.join(', ')}</p>`;
-                unapprovedListDiv.classList.remove('hidden');
-            } else {
-                unapprovedListDiv.innerHTML = '<h3>Unapproved Absentees</h3><p>No unapproved absentees for this year.</p>';
-                unapprovedListDiv.classList.remove('hidden');
-            }
-        } catch(err) {
-            unapprovedListDiv.innerHTML = `<h3>Unapproved Absentees</h3><p>Error loading list.</p>`;
-            unapprovedListDiv.classList.remove('hidden');
-            console.error("Error fetching unapproved absentees:", err);
-        }
-    }
 </script>
 
 </body>
