@@ -90,7 +90,6 @@
             transition: background-color 0.3s ease;
         }
         
-        /* Button Effects */
         button:hover {
             background-color: #286090;
         }
@@ -132,10 +131,10 @@
         #unapprovedList {
             margin-top: 20px;
             padding: 15px;
-            border: 1px solid #d9534f; /* Red border for emphasis */
+            border: 1px solid #d9534f;
             border-radius: 4px;
-            background-color: #fce4e4; /* Light red background */
-            color: #d9534f; /* Dark red text */
+            background-color: #fce4e4;
+            color: #d9534f;
         }
         
         #unapprovedList h3 {
@@ -192,7 +191,7 @@
         const unapprovedListDiv = document.getElementById('unapprovedList');
         
         msg.textContent = 'Loading students...';
-        unapprovedListDiv.classList.add('hidden'); // Hide unapproved list on load
+        unapprovedListDiv.classList.add('hidden');
         
         const url = `${WEBAPP_URL}?action=getStudents&dept=${encodeURIComponent(dept)}&year=${encodeURIComponent(yr)}`;
         
@@ -210,7 +209,7 @@
                 .map(s => `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`)
                 .join("");
             
-            msg.textContent = ''; // Clear message on success
+            msg.textContent = '';
             
         } catch(err){
             msg.textContent = "Error loading students: " + err;
@@ -232,7 +231,6 @@
             const j = await res.json();
             msg.innerText = j.message || j.error;
             
-            // This is the key change: call the function to display unapproved absentees
             await displayUnapprovedAbsentees(dept, yr);
 
         } catch(err){
