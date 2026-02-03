@@ -6,48 +6,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f2f2f2;
-  margin: 0;
-}
-.container {
-  max-width: 700px;
-  margin: 20px auto;
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-}
+body { font-family: Arial; background:#f2f2f2; margin:0; }
+.container { max-width:700px; margin:20px auto; background:#fff; padding:20px; border-radius:8px; }
 h2,h3 { text-align:center; color:#004d80; }
+
 label { font-weight:bold; margin-top:10px; display:block; }
+
 select,input,button {
-  width:100%;
-  padding:10px;
-  margin:6px 0 12px;
+width:100%; padding:10px; margin:6px 0 12px;
 }
+
 button {
-  background:#337ab7;
-  color:#fff;
-  border:none;
-  cursor:pointer;
+background:#337ab7; color:white; border:none; cursor:pointer;
 }
 button:hover { background:#23527c; }
+
 .card {
-  border:1px solid #ccc;
-  padding:10px;
-  margin:8px 0;
-  border-radius:5px;
-  background:#fafafa;
+border:1px solid #ccc; padding:10px; margin:8px 0;
+border-radius:5px; background:#fafafa;
 }
+
 .status-PENDING{color:orange;font-weight:bold;}
 .status-APPROVED{color:green;font-weight:bold;}
 .status-REJECTED{color:red;font-weight:bold;}
+
+.badge {
+background:#004d80; color:white; padding:4px 8px;
+border-radius:5px; font-size:12px;
+}
+
+.approvedStudent {
+background:#e6ffe6;
+}
 </style>
 </head>
 
 <body>
 
 <div class="container">
+
 <h2>Student Attendance Portal</h2>
 
 <label>Select Year</label>
@@ -74,47 +71,47 @@ button:hover { background:#23527c; }
 
 <hr>
 
-<h3>Student Requests</h3>
+<h3>Student Requests <span id="reqCount" class="badge">0</span></h3>
+
+<input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()">
+
 <div id="requestsContainer"></div>
 
 </div>
 
 <script>
 
-/* ================= CONFIG ================= */
-
 const SCRIPT_URL =
 "https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
 
-const dept =
-new URLSearchParams(window.location.search).get("dept") || "CSE";
+const dept = new URLSearchParams(window.location.search).get("dept") || "CSE";
+
+let requestCache = [];
+let approvedRolls = [];
 
 
-/* ================= LOAD ATTENDANCE ================= */
+/* ===== LOAD ATTENDANCE ===== */
 
 async function loadAttendance(){
 
-const year=document.getElementById("year").value;
-const form=document.getElementById("attendanceForm");
-const saveBtn=document.getElementById("saveBtn");
+const year = yearVal();
+const form = document.getElementById("attendanceForm");
+const saveBtn = document.getElementById("saveBtn");
 
-form.innerHTML="Loading...";
-saveBtn.disabled=true;
+form.innerHTML = "Loading students...";
+saveBtn.disabled = true;
 
 try{
 
-const res=await fetch(
-`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`
-);
+const res = await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`);
+const json = await res.json();
 
-const json=await res.json();
-
-if(!json.success || !Array.isArray(json.students)){
-form.innerHTML="No students found";
+if(!json.success){
+form.innerHTML = "No students found";
 return;
 }
 
-let html=`
+let html = `
 <label>Total Boys</label>
 <input type="number" id="boysTotal" value="0">
 
@@ -125,48 +122,53 @@ let html=`
 `;
 
 json.students.forEach(s=>{
-html+=`
-<label>
+
+const highlight = approvedRolls.includes(s.rollno)
+? "approvedStudent" : "";
+
+html += `
+<label class="${highlight}">
 <input type="checkbox" value="${s.rollno}">
 ${s.rollno}
 </label>
 `;
+
 });
 
-html+="</div>";
+html += "</div>";
 
-form.innerHTML=html;
-saveBtn.disabled=false;
+form.innerHTML = html;
+saveBtn.disabled = false;
 
 loadRequests();
 
 }catch(err){
-console.error(err);
-form.innerHTML="Error loading attendance";
+form.innerHTML = "Error loading students";
 }
 
 }
 
 
-/* ================= SAVE ATTENDANCE ================= */
+/* ===== SAVE ATTENDANCE ===== */
 
 async function submitAttendance(){
 
-const year=document.getElementById("year").value;
-const session=document.getElementById("session").value;
-const date=new Date().toISOString().split("T")[0];
+const year = yearVal();
+const session = val("session");
+const date = today();
 
-const boysTotal=document.getElementById("boysTotal")?.value||0;
-const girlsTotal=document.getElementById("girlsTotal")?.value||0;
+const boysTotal = val("boysTotal",0);
+const girlsTotal = val("girlsTotal",0);
 
-const all=[...document.querySelectorAll("#studentsList input")]
+const all = [...document.querySelectorAll("#studentsList input")]
 .map(i=>i.value);
 
-const absent=all.filter(r=>
-!document.querySelector(`input[value="${r}"]`)?.checked
-);
+let absent = all.filter(r => !document.querySelector(`input[value="${r}"]`).checked);
 
-const url=
+// Auto include approved leaves
+absent = [...new Set([...absent, ...approvedRolls])];
+
+const url =
 `${SCRIPT_URL}?action=saveAttendanceByRollNo
 &dept=${dept}
 &year=${year}
@@ -176,68 +178,105 @@ const url=
 &boysTotal=${boysTotal}
 &girlsTotal=${girlsTotal}`;
 
-try{
+const res = await fetch(url);
+const json = await res.json();
 
-const res=await fetch(url);
-const json=await res.json();
-
-document.getElementById("msg").innerText=json.message;
-
-}catch(err){
-console.error(err);
-document.getElementById("msg").innerText="Error saving attendance";
-}
+msg(json.message);
+document.getElementById("saveBtn").disabled = true;
 
 }
 
 
-/* ================= LOAD REQUESTS ================= */
+/* ===== LOAD REQUESTS ===== */
 
 async function loadRequests(){
 
-const year=document.getElementById("year").value;
-const div=document.getElementById("requestsContainer");
+const year = yearVal();
+const div = document.getElementById("requestsContainer");
 
-div.innerHTML="Loading requests...";
+div.innerHTML = "Loading requests...";
 
-try{
+const res = await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`);
+const json = await res.json();
 
-const res=await fetch(
-`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`
-);
-
-const json=await res.json();
-
-div.innerHTML="";
-
-if(!json.success || !Array.isArray(json.requests) || json.requests.length===0){
-div.innerHTML="<p>No requests for this year.</p>";
+if(!json.success){
+div.innerHTML = "No requests";
 return;
 }
 
-json.requests.forEach(r=>{
+requestCache = json.requests;
+approvedRolls = requestCache
+.filter(r => r.status === "APPROVED")
+.map(r => r.roll);
 
-div.innerHTML+=`
+document.getElementById("reqCount").innerText = requestCache.length;
+
+renderRequests();
+}
+
+
+/* ===== RENDER REQUESTS ===== */
+
+function renderRequests(){
+
+const div = document.getElementById("requestsContainer");
+div.innerHTML = "";
+
+requestCache.forEach(r=>{
+
+div.innerHTML += `
 <div class="card">
-<b>Roll No:</b> ${r.roll}<br>
-<b>Date:</b> ${r.date}<br>
-<b>Reason:</b> ${r.reason}<br>
-<b>Message:</b> ${r.message}<br>
-<b>Status:</b>
-<span class="status-${r.status}">${r.status}</span>
+<b>${r.roll}</b> | ${r.date}<br>
+Reason: ${r.reason}<br>
+Message: ${r.message}<br>
+
+Status:
+<span class="status-${r.status}">${r.status}</span><br><br>
+
+${ r.status==="PENDING" ? `
+<button onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">Approve</button>
+<button onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">Reject</button>
+` : "" }
+
 </div>
 `;
-
 });
 
-}catch(err){
-console.error(err);
-div.innerHTML="<p>Error loading requests</p>";
 }
 
+
+/* ===== UPDATE STATUS ===== */
+
+async function updateStatus(roll,date,status){
+
+await fetch(`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`);
+
+loadRequests();
+loadAttendance();
 }
+
+
+/* ===== SEARCH ===== */
+
+function filterRequests(){
+
+const q = document.getElementById("searchBox").value.toLowerCase();
+
+requestCache = requestCache.filter(r =>
+r.roll.toLowerCase().includes(q)
+);
+
+renderRequests();
+}
+
+
+/* ===== UTIL ===== */
+
+function yearVal(){ return val("year"); }
+function val(id,d=""){ return document.getElementById(id)?.value || d; }
+function today(){ return new Date().toISOString().split("T")[0]; }
+function msg(t){ document.getElementById("msg").innerText=t; }
 
 </script>
-
 </body>
 </html>
