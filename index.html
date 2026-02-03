@@ -168,25 +168,40 @@ async function submitAttendance() {
 /* ================= REQUESTS ================= */
 
 async function loadRequests() {
+
   const year = document.getElementById("year").value;
   const div = document.getElementById("requestsContainer");
 
   div.innerHTML = "Loading requests...";
 
   try {
-    const res = await fetch(
-      `${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`
-    );
 
+    const url = `${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`;
+
+    console.log("REQUEST URL:", url);
+
+    const res = await fetch(url);
     const json = await res.json();
+
+    console.log("REQUEST RESPONSE:", json);
+
     div.innerHTML = "";
 
-    if (!json.success || !json.requests || json.requests.length === 0) {
+    // ✅ Check API success
+    if (!json.success) {
+      div.innerHTML = `<p>${json.message || "Server error"}</p>`;
+      return;
+    }
+
+    // ✅ Check request list
+    if (!Array.isArray(json.requests) || json.requests.length === 0) {
       div.innerHTML = "<p>No requests for this year.</p>";
       return;
     }
 
+    // ✅ Display cards
     json.requests.forEach(r => {
+
       div.innerHTML += `
         <div class="card">
           <b>Roll No:</b> ${r.roll}<br>
@@ -197,15 +212,20 @@ async function loadRequests() {
           <span class="status-${r.status}">${r.status}</span>
         </div>
       `;
+
     });
 
   } catch (err) {
+
+    console.error("Request Load Error:", err);
     div.innerHTML = "<p>Error loading requests</p>";
+
   }
 }
 </script>
 
 </body>
 </html>
+
 
 
