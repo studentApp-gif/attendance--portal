@@ -170,15 +170,18 @@ async function submitAttendance() {
 async function loadRequests() {
   const year = document.getElementById("year").value;
   const div = document.getElementById("requestsContainer");
+
   div.innerHTML = "Loading requests...";
 
   try {
-    const res = await fetch(`${SCRIPT_URL}?action=getRequestsForHod&dept=${dept}&year=${year}`);
-    const json = await res.json();
+    const res = await fetch(
+      `${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`
+    );
 
+    const json = await res.json();
     div.innerHTML = "";
 
-    if (!json.requests || json.requests.length === 0) {
+    if (!json.success || !json.requests || json.requests.length === 0) {
       div.innerHTML = "<p>No requests for this year.</p>";
       return;
     }
@@ -187,6 +190,7 @@ async function loadRequests() {
       div.innerHTML += `
         <div class="card">
           <b>Roll No:</b> ${r.roll}<br>
+          <b>Date:</b> ${r.date}<br>
           <b>Reason:</b> ${r.reason}<br>
           <b>Message:</b> ${r.message}<br>
           <b>Status:</b>
@@ -194,7 +198,8 @@ async function loadRequests() {
         </div>
       `;
     });
-  } catch (e) {
+
+  } catch (err) {
     div.innerHTML = "<p>Error loading requests</p>";
   }
 }
@@ -202,4 +207,5 @@ async function loadRequests() {
 
 </body>
 </html>
+
 
