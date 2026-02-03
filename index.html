@@ -1,231 +1,243 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Student Attendance Portal</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>Student Attendance Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 700px;
-      margin: 20px auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-    }
-    h2, h3 {
-      text-align: center;
-      color: #004d80;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-    select, input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      margin-bottom: 12px;
-    }
-    button {
-      background: #337ab7;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #23527c;
-    }
-    #studentsList label {
-      display: block;
-      margin: 5px 0;
-    }
-    .card {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 5px;
-      background: #fafafa;
-    }
-    .status-Pending { color: orange; font-weight: bold; }
-    .status-Approved { color: green; font-weight: bold; }
-    .status-Rejected { color: red; font-weight: bold; }
-    #msg {
-      text-align: center;
-      font-weight: bold;
-    }
-  </style>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f2f2f2;
+  margin: 0;
+}
+.container {
+  max-width: 700px;
+  margin: 20px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+}
+h2,h3 { text-align:center; color:#004d80; }
+label { font-weight:bold; margin-top:10px; display:block; }
+select,input,button {
+  width:100%;
+  padding:10px;
+  margin:6px 0 12px;
+}
+button {
+  background:#337ab7;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+}
+button:hover { background:#23527c; }
+.card {
+  border:1px solid #ccc;
+  padding:10px;
+  margin:8px 0;
+  border-radius:5px;
+  background:#fafafa;
+}
+.status-PENDING{color:orange;font-weight:bold;}
+.status-APPROVED{color:green;font-weight:bold;}
+.status-REJECTED{color:red;font-weight:bold;}
+</style>
 </head>
 
 <body>
 
 <div class="container">
-  <h2>Student Attendance Portal</h2>
+<h2>Student Attendance Portal</h2>
 
-  <!-- YEAR -->
-  <label>Select Year</label>
-  <select id="year">
-    <option value="2">2nd Year</option>
-    <option value="3">3rd Year</option>
-    <option value="4">4th Year</option>
-  </select>
+<label>Select Year</label>
+<select id="year">
+<option value="1">1st Year</option>
+<option value="2">2nd Year</option>
+<option value="3">3rd Year</option>
+<option value="4">4th Year</option>
+</select>
 
-  <!-- SESSION -->
-  <label>Select Session</label>
-  <select id="session">
-    <option value="Morning">Morning</option>
-    <option value="Afternoon">Afternoon</option>
-  </select>
+<label>Select Session</label>
+<select id="session">
+<option value="Morning">Morning</option>
+<option value="Afternoon">Afternoon</option>
+</select>
 
-  <button onclick="loadAttendance()">Load Attendance</button>
+<button onclick="loadAttendance()">Load Attendance</button>
 
-  <div id="attendanceForm"></div>
+<div id="attendanceForm"></div>
 
-  <button onclick="submitAttendance()">Save Attendance</button>
+<button id="saveBtn" disabled onclick="submitAttendance()">Save Attendance</button>
 
-  <p id="msg"></p>
+<p id="msg"></p>
 
-  <hr>
+<hr>
 
-  <h3>Student Requests</h3>
-  <div id="requestsContainer"></div>
+<h3>Student Requests</h3>
+<div id="requestsContainer"></div>
+
 </div>
 
 <script>
+
 /* ================= CONFIG ================= */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
-const dept = new URLSearchParams(window.location.search).get("dept") || "CSE";
 
-/* ================= ATTENDANCE ================= */
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
 
-async function loadAttendance() {
-  const year = document.getElementById("year").value;
-  document.getElementById("attendanceForm").innerHTML = "Loading...";
+const dept =
+new URLSearchParams(window.location.search).get("dept") || "CSE";
 
-  if (dept === "CSM") {
-    const res = await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`);
-    const json = await res.json();
 
-    let html = `
-      <label>Total Boys</label>
-      <input type="number" id="boysTotal" value="0">
-      <label>Total Girls</label>
-      <input type="number" id="girlsTotal" value="0">
-      <div id="studentsList">
-    `;
+/* ================= LOAD ATTENDANCE ================= */
 
-    json.students.forEach(s => {
-      html += `<label><input type="checkbox" value="${s.rollno}"> ${s.rollno}</label>`;
-    });
+async function loadAttendance(){
 
-    html += "</div>";
-    document.getElementById("attendanceForm").innerHTML = html;
-  } else {
-    document.getElementById("attendanceForm").innerHTML = `
-      <label>Present Boys</label>
-      <input type="number" id="boysCount" value="0">
-      <label>Present Girls</label>
-      <input type="number" id="girlsCount" value="0">
-    `;
-  }
+const year=document.getElementById("year").value;
+const form=document.getElementById("attendanceForm");
+const saveBtn=document.getElementById("saveBtn");
 
-  loadRequests(); // load requests after year selected
+form.innerHTML="Loading...";
+saveBtn.disabled=true;
+
+try{
+
+const res=await fetch(
+`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`
+);
+
+const json=await res.json();
+
+if(!json.success || !Array.isArray(json.students)){
+form.innerHTML="No students found";
+return;
 }
 
-async function submitAttendance() {
-  const year = document.getElementById("year").value;
-  const session = document.getElementById("session").value;
-  const date = new Date().toISOString().split("T")[0];
+let html=`
+<label>Total Boys</label>
+<input type="number" id="boysTotal" value="0">
 
-  let url = "";
+<label>Total Girls</label>
+<input type="number" id="girlsTotal" value="0">
 
-  if (dept === "CSM") {
-    const boysTotal = document.getElementById("boysTotal").value;
-    const girlsTotal = document.getElementById("girlsTotal").value;
-    const all = [...document.querySelectorAll("#studentsList input")].map(i => i.value);
-    const absent = all.filter(r => !document.querySelector(`input[value="${r}"]`).checked);
+<div id="studentsList">
+`;
 
-    url = `${SCRIPT_URL}?action=saveAttendanceByRollNo&dept=${dept}&year=${year}&date=${date}&session=${session}&absent=${absent.join(",")}&boysTotal=${boysTotal}&girlsTotal=${girlsTotal}`;
-  } else {
-    const boys = document.getElementById("boysCount").value;
-    const girls = document.getElementById("girlsCount").value;
+json.students.forEach(s=>{
+html+=`
+<label>
+<input type="checkbox" value="${s.rollno}">
+${s.rollno}
+</label>
+`;
+});
 
-    url = `${SCRIPT_URL}?action=saveAttendanceCount&dept=${dept}&year=${year}&date=${date}&session=${session}&boys=${boys}&girls=${girls}`;
-  }
+html+="</div>";
 
-  const res = await fetch(url);
-  const json = await res.json();
-  document.getElementById("msg").innerText = json.message;
+form.innerHTML=html;
+saveBtn.disabled=false;
+
+loadRequests();
+
+}catch(err){
+console.error(err);
+form.innerHTML="Error loading attendance";
 }
 
-/* ================= REQUESTS ================= */
-
-async function loadRequests() {
-
-  const year = document.getElementById("year").value;
-  const div = document.getElementById("requestsContainer");
-
-  div.innerHTML = "Loading requests...";
-
-  try {
-
-    const url = `${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`;
-
-    console.log("REQUEST URL:", url);
-
-    const res = await fetch(url);
-    const json = await res.json();
-
-    console.log("REQUEST RESPONSE:", json);
-
-    div.innerHTML = "";
-
-    // ✅ Check API success
-    if (!json.success) {
-      div.innerHTML = `<p>${json.message || "Server error"}</p>`;
-      return;
-    }
-
-    // ✅ Check request list
-    if (!Array.isArray(json.requests) || json.requests.length === 0) {
-      div.innerHTML = "<p>No requests for this year.</p>";
-      return;
-    }
-
-    // ✅ Display cards
-    json.requests.forEach(r => {
-
-      div.innerHTML += `
-        <div class="card">
-          <b>Roll No:</b> ${r.roll}<br>
-          <b>Date:</b> ${r.date}<br>
-          <b>Reason:</b> ${r.reason}<br>
-          <b>Message:</b> ${r.message}<br>
-          <b>Status:</b>
-          <span class="status-${r.status}">${r.status}</span>
-        </div>
-      `;
-
-    });
-
-  } catch (err) {
-
-    console.error("Request Load Error:", err);
-    div.innerHTML = "<p>Error loading requests</p>";
-
-  }
 }
+
+
+/* ================= SAVE ATTENDANCE ================= */
+
+async function submitAttendance(){
+
+const year=document.getElementById("year").value;
+const session=document.getElementById("session").value;
+const date=new Date().toISOString().split("T")[0];
+
+const boysTotal=document.getElementById("boysTotal")?.value||0;
+const girlsTotal=document.getElementById("girlsTotal")?.value||0;
+
+const all=[...document.querySelectorAll("#studentsList input")]
+.map(i=>i.value);
+
+const absent=all.filter(r=>
+!document.querySelector(`input[value="${r}"]`)?.checked
+);
+
+const url=
+`${SCRIPT_URL}?action=saveAttendanceByRollNo
+&dept=${dept}
+&year=${year}
+&date=${date}
+&session=${session}
+&absent=${absent.join(",")}
+&boysTotal=${boysTotal}
+&girlsTotal=${girlsTotal}`;
+
+try{
+
+const res=await fetch(url);
+const json=await res.json();
+
+document.getElementById("msg").innerText=json.message;
+
+}catch(err){
+console.error(err);
+document.getElementById("msg").innerText="Error saving attendance";
+}
+
+}
+
+
+/* ================= LOAD REQUESTS ================= */
+
+async function loadRequests(){
+
+const year=document.getElementById("year").value;
+const div=document.getElementById("requestsContainer");
+
+div.innerHTML="Loading requests...";
+
+try{
+
+const res=await fetch(
+`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`
+);
+
+const json=await res.json();
+
+div.innerHTML="";
+
+if(!json.success || !Array.isArray(json.requests) || json.requests.length===0){
+div.innerHTML="<p>No requests for this year.</p>";
+return;
+}
+
+json.requests.forEach(r=>{
+
+div.innerHTML+=`
+<div class="card">
+<b>Roll No:</b> ${r.roll}<br>
+<b>Date:</b> ${r.date}<br>
+<b>Reason:</b> ${r.reason}<br>
+<b>Message:</b> ${r.message}<br>
+<b>Status:</b>
+<span class="status-${r.status}">${r.status}</span>
+</div>
+`;
+
+});
+
+}catch(err){
+console.error(err);
+div.innerHTML="<p>Error loading requests</p>";
+}
+
+}
+
 </script>
 
 </body>
 </html>
-
-
-
