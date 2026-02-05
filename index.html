@@ -6,38 +6,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body { font-family: Arial; background:#f2f2f2; margin:0; }
-.container { max-width:700px; margin:20px auto; background:#fff; padding:20px; border-radius:8px; }
-h2,h3 { text-align:center; color:#004d80; }
+body{font-family:Arial;background:#f2f2f2;margin:0}
+.container{max-width:700px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
 
-label { font-weight:bold; margin-top:10px; display:block; }
+h2,h3{text-align:center;color:#004d80}
 
-select,input,button {
-width:100%; padding:10px; margin:6px 0 12px;
-}
+label{font-weight:bold;margin-top:10px;display:block}
 
-button {
-background:#337ab7; color:white; border:none; cursor:pointer;
-}
-button:hover { background:#23527c; }
+select,input,button{width:100%;padding:10px;margin:6px 0 12px}
 
-.card {
-border:1px solid #ccc; padding:10px; margin:8px 0;
-border-radius:5px; background:#fafafa;
-}
+button{background:#337ab7;color:white;border:none;cursor:pointer}
+button:hover{background:#23527c}
 
-.status-PENDING{color:orange;font-weight:bold;}
-.status-APPROVED{color:green;font-weight:bold;}
-.status-REJECTED{color:red;font-weight:bold;}
+.card{border:1px solid #ccc;padding:10px;margin:8px 0;border-radius:5px;background:#fafafa}
 
-.badge {
-background:#004d80; color:white; padding:4px 8px;
-border-radius:5px; font-size:12px;
-}
+.status-PENDING{color:orange;font-weight:bold}
+.status-APPROVED{color:green;font-weight:bold}
+.status-REJECTED{color:red;font-weight:bold}
 
-.approvedStudent {
-background:#e6ffe6;
-}
+.badge{background:#004d80;color:white;padding:4px 8px;border-radius:5px;font-size:12px}
+
+.approvedStudent{background:#e6ffe6}
 </style>
 </head>
 
@@ -81,37 +70,35 @@ background:#e6ffe6;
 
 <script>
 
-const SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
 
-const dept = new URLSearchParams(window.location.search).get("dept") || "CSE";
+const dept=new URLSearchParams(window.location.search).get("dept") || "CSE";
 
-let requestCache = [];
-let approvedRolls = [];
+let requestCache=[];
+let fullRequestCache=[];
+let approvedRolls=[];
 
 
 /* ===== LOAD ATTENDANCE ===== */
 
 async function loadAttendance(){
 
-const year = yearVal();
-const form = document.getElementById("attendanceForm");
-const saveBtn = document.getElementById("saveBtn");
+msg("Loading students...");
+document.getElementById("saveBtn").disabled=true;
 
-form.innerHTML = "Loading students...";
-saveBtn.disabled = true;
+await loadRequests(true); // Load approved leaves first
 
 try{
 
-const res = await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`);
-const json = await res.json();
+const res=await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${yearVal()}`);
+const json=await res.json();
 
-if(!json.success){
-form.innerHTML = "No students found";
+if(!json.success || !json.students){
+msg("No students found");
 return;
 }
 
-let html = `
+let html=`
 <label>Total Boys</label>
 <input type="number" id="boysTotal" value="0">
 
@@ -123,10 +110,9 @@ let html = `
 
 json.students.forEach(s=>{
 
-const highlight = approvedRolls.includes(s.rollno)
-? "approvedStudent" : "";
+const highlight=approvedRolls.includes(s.rollno) ? "approvedStudent" : "";
 
-html += `
+html+=`
 <label class="${highlight}">
 <input type="checkbox" value="${s.rollno}">
 ${s.rollno}
@@ -135,15 +121,15 @@ ${s.rollno}
 
 });
 
-html += "</div>";
+html+="</div>";
 
-form.innerHTML = html;
-saveBtn.disabled = false;
+document.getElementById("attendanceForm").innerHTML=html;
+document.getElementById("saveBtn").disabled=false;
 
-loadRequests();
+msg("");
 
 }catch(err){
-form.innerHTML = "Error loading students";
+msg("Error loading students");
 }
 
 }
@@ -153,65 +139,57 @@ form.innerHTML = "Error loading students";
 
 async function submitAttendance(){
 
-const year = yearVal();
-const session = val("session");
-const date = today();
-
-const boysTotal = val("boysTotal",0);
-const girlsTotal = val("girlsTotal",0);
-
-const all = [...document.querySelectorAll("#studentsList input")]
+const all=[...document.querySelectorAll("#studentsList input")]
 .map(i=>i.value);
 
-let absent = all.filter(r => !document.querySelector(`input[value="${r}"]`).checked);
+let absent=all.filter(r=>!document.querySelector(`input[value="${r}"]`).checked);
 
-// Auto include approved leaves
-absent = [...new Set([...absent, ...approvedRolls])];
+// Include approved leaves automatically
+absent=[...new Set([...absent,...approvedRolls])];
 
-const url =
-`${SCRIPT_URL}?action=saveAttendanceByRollNo
+const url=`${SCRIPT_URL}?action=saveAttendanceByRollNo
 &dept=${dept}
-&year=${year}
-&date=${date}
-&session=${session}
+&year=${yearVal()}
+&date=${today()}
+&session=${val("session")}
 &absent=${absent.join(",")}
-&boysTotal=${boysTotal}
-&girlsTotal=${girlsTotal}`;
+&boysTotal=${val("boysTotal",0)}
+&girlsTotal=${val("girlsTotal",0)}`;
 
-const res = await fetch(url);
-const json = await res.json();
+const res=await fetch(url);
+const json=await res.json();
 
 msg(json.message);
-document.getElementById("saveBtn").disabled = true;
-
+document.getElementById("saveBtn").disabled=true;
 }
 
 
 /* ===== LOAD REQUESTS ===== */
 
-async function loadRequests(){
+async function loadRequests(silent=false){
 
-const year = yearVal();
-const div = document.getElementById("requestsContainer");
+if(!silent) msg("Loading requests...");
 
-div.innerHTML = "Loading requests...";
-
-const res = await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}`);
-const json = await res.json();
+const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${yearVal()}`);
+const json=await res.json();
 
 if(!json.success){
-div.innerHTML = "No requests";
+msg("No requests");
 return;
 }
 
-requestCache = json.requests;
-approvedRolls = requestCache
-.filter(r => r.status === "APPROVED")
-.map(r => r.roll);
+fullRequestCache=json.requests;
+requestCache=[...fullRequestCache];
 
-document.getElementById("reqCount").innerText = requestCache.length;
+approvedRolls=requestCache
+.filter(r=>r.status==="APPROVED")
+.map(r=>r.roll);
+
+document.getElementById("reqCount").innerText=requestCache.length;
 
 renderRequests();
+
+if(!silent) msg("");
 }
 
 
@@ -219,12 +197,12 @@ renderRequests();
 
 function renderRequests(){
 
-const div = document.getElementById("requestsContainer");
-div.innerHTML = "";
+const div=document.getElementById("requestsContainer");
+div.innerHTML="";
 
 requestCache.forEach(r=>{
 
-div.innerHTML += `
+div.innerHTML+=`
 <div class="card">
 <b>${r.roll}</b> | ${r.date}<br>
 Reason: ${r.reason}<br>
@@ -241,7 +219,6 @@ ${ r.status==="PENDING" ? `
 </div>
 `;
 });
-
 }
 
 
@@ -249,10 +226,14 @@ ${ r.status==="PENDING" ? `
 
 async function updateStatus(roll,date,status){
 
+msg("Updating status...");
+
 await fetch(`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`);
 
-loadRequests();
-loadAttendance();
+await loadRequests(true);
+await loadAttendance();
+
+msg("Status Updated");
 }
 
 
@@ -260,9 +241,9 @@ loadAttendance();
 
 function filterRequests(){
 
-const q = document.getElementById("searchBox").value.toLowerCase();
+const q=document.getElementById("searchBox").value.toLowerCase();
 
-requestCache = requestCache.filter(r =>
+requestCache=fullRequestCache.filter(r=>
 r.roll.toLowerCase().includes(q)
 );
 
@@ -272,11 +253,12 @@ renderRequests();
 
 /* ===== UTIL ===== */
 
-function yearVal(){ return val("year"); }
-function val(id,d=""){ return document.getElementById(id)?.value || d; }
-function today(){ return new Date().toISOString().split("T")[0]; }
-function msg(t){ document.getElementById("msg").innerText=t; }
+function yearVal(){return val("year")}
+function val(id,d=""){return document.getElementById(id)?.value||d}
+function today(){return new Date().toISOString().split("T")[0]}
+function msg(t){document.getElementById("msg").innerText=t}
 
 </script>
+
 </body>
 </html>
