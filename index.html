@@ -6,27 +6,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-body{font-family:Arial;background:#f2f2f2;margin:0}
-.container{max-width:700px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
 
-h2,h3{text-align:center;color:#004d80}
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+}
 
-label{font-weight:bold;margin-top:10px;display:block}
+.container{
+max-width:700px;
+margin:20px auto;
+background:#fff;
+padding:20px;
+border-radius:8px;
+}
 
-select,input,button{width:100%;padding:10px;margin:6px 0 12px}
+h2,h3{
+text-align:center;
+color:#004d80;
+}
 
-button{background:#337ab7;color:white;border:none;cursor:pointer}
-button:hover{background:#23527c}
+label{
+font-weight:bold;
+margin-top:10px;
+display:block;
+}
 
-.card{border:1px solid #ccc;padding:10px;margin:8px 0;border-radius:5px;background:#fafafa}
+select,input,button{
+width:100%;
+padding:10px;
+margin:6px 0 12px;
+}
 
-.status-PENDING{color:orange;font-weight:bold}
-.status-APPROVED{color:green;font-weight:bold}
-.status-REJECTED{color:red;font-weight:bold}
+button{
+background:#337ab7;
+color:white;
+border:none;
+cursor:pointer;
+}
 
-.badge{background:#004d80;color:white;padding:4px 8px;border-radius:5px;font-size:12px}
+button:hover{
+background:#23527c;
+}
 
-.approvedStudent{background:#e6ffe6}
+.card{
+border:1px solid #ccc;
+padding:10px;
+margin:8px 0;
+border-radius:5px;
+background:#fafafa;
+}
+
+.status-PENDING{color:orange;font-weight:bold;}
+.status-APPROVED{color:green;font-weight:bold;}
+.status-REJECTED{color:red;font-weight:bold;}
+
+.badge{
+background:#004d80;
+color:white;
+padding:4px 8px;
+border-radius:5px;
+font-size:12px;
+}
+
+.approvedStudent{
+background:#e6ffe6;
+}
+
 </style>
 </head>
 
@@ -60,7 +106,10 @@ button:hover{background:#23527c}
 
 <hr>
 
-<h3>Student Requests <span id="reqCount" class="badge">0</span></h3>
+<h3>
+Student Requests
+<span id="reqCount" class="badge">0</span>
+</h3>
 
 <input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()">
 
@@ -70,28 +119,36 @@ button:hover{background:#23527c}
 
 <script>
 
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
+/* ========= CONFIG ========= */
 
-const dept=new URLSearchParams(window.location.search).get("dept") || "CSE";
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
+
+const dept =
+new URLSearchParams(window.location.search).get("dept") || "CSE";
 
 let requestCache=[];
 let fullRequestCache=[];
 let approvedRolls=[];
 
 
-/* ===== LOAD ATTENDANCE ===== */
+/* ========= LOAD ATTENDANCE ========= */
 
 async function loadAttendance(){
 
 msg("Loading students...");
 document.getElementById("saveBtn").disabled=true;
 
-await loadRequests(true); // Load approved leaves first
+// Load today's requests first
+await loadRequests(true);
 
 try{
 
-const res=await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${yearVal()}`);
-const json=await res.json();
+const res = await fetch(
+`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${yearVal()}`
+);
+
+const json = await res.json();
 
 if(!json.success || !json.students){
 msg("No students found");
@@ -99,10 +156,11 @@ return;
 }
 
 let html=`
-<label>Total Boys</label>
+
+<label>Total Boys (Present)</label>
 <input type="number" id="boysTotal" value="0">
 
-<label>Total Girls</label>
+<label>Total Girls (Present)</label>
 <input type="number" id="girlsTotal" value="0">
 
 <div id="studentsList">
@@ -110,7 +168,9 @@ let html=`
 
 json.students.forEach(s=>{
 
-const highlight=approvedRolls.includes(s.rollno) ? "approvedStudent" : "";
+const highlight =
+approvedRolls.includes(s.rollno)
+? "approvedStudent" : "";
 
 html+=`
 <label class="${highlight}">
@@ -135,65 +195,75 @@ msg("Error loading students");
 }
 
 
-/* ===== SAVE ATTENDANCE ===== */
+/* ========= SAVE ATTENDANCE ========= */
 
 async function submitAttendance(){
 
 const all=[...document.querySelectorAll("#studentsList input")]
 .map(i=>i.value);
 
-let absent=all.filter(r=>!document.querySelector(`input[value="${r}"]`).checked);
+let absent = all.filter(r =>
+!document.querySelector(`input[value="${r}"]`).checked
+);
 
-// Include approved leaves automatically
-absent=[...new Set([...absent,...approvedRolls])];
+// include approved leaves automatically
+absent = [...new Set([...absent,...approvedRolls])];
 
-const url=`${SCRIPT_URL}?action=saveAttendanceByRollNo
+const url=`
+${SCRIPT_URL}?action=saveAttendanceByRollNo
 &dept=${dept}
 &year=${yearVal()}
 &date=${today()}
 &session=${val("session")}
 &absent=${absent.join(",")}
 &boysTotal=${val("boysTotal",0)}
-&girlsTotal=${val("girlsTotal",0)}`;
+&girlsTotal=${val("girlsTotal",0)}
+`;
 
-const res=await fetch(url);
-const json=await res.json();
+const res = await fetch(url);
+const json = await res.json();
 
 msg(json.message);
 document.getElementById("saveBtn").disabled=true;
+
 }
 
 
-/* ===== LOAD REQUESTS ===== */
+/* ========= LOAD REQUESTS ========= */
 
 async function loadRequests(silent=false){
 
 if(!silent) msg("Loading requests...");
 
-const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${yearVal()}`);
-const json=await res.json();
+const res = await fetch(
+`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${yearVal()}`
+);
+
+const json = await res.json();
 
 if(!json.success){
 msg("No requests");
 return;
 }
 
-fullRequestCache=json.requests;
-requestCache=[...fullRequestCache];
+// store full copy
+fullRequestCache = json.requests;
+requestCache = [...fullRequestCache];
 
-approvedRolls=requestCache
-.filter(r=>r.status==="APPROVED")
-.map(r=>r.roll);
+approvedRolls = requestCache
+.filter(r => r.status==="APPROVED")
+.map(r => r.roll);
 
 document.getElementById("reqCount").innerText=requestCache.length;
 
 renderRequests();
 
 if(!silent) msg("");
+
 }
 
 
-/* ===== RENDER REQUESTS ===== */
+/* ========= RENDER REQUESTS ========= */
 
 function renderRequests(){
 
@@ -204,6 +274,7 @@ requestCache.forEach(r=>{
 
 div.innerHTML+=`
 <div class="card">
+
 <b>${r.roll}</b> | ${r.date}<br>
 Reason: ${r.reason}<br>
 Message: ${r.message}<br>
@@ -212,51 +283,71 @@ Status:
 <span class="status-${r.status}">${r.status}</span><br><br>
 
 ${ r.status==="PENDING" ? `
-<button onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">Approve</button>
-<button onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">Reject</button>
+<button onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">
+Approve
+</button>
+
+<button onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">
+Reject
+</button>
 ` : "" }
 
 </div>
 `;
+
 });
+
 }
 
 
-/* ===== UPDATE STATUS ===== */
+/* ========= UPDATE STATUS ========= */
 
 async function updateStatus(roll,date,status){
 
 msg("Updating status...");
 
-await fetch(`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`);
+await fetch(
+`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`
+);
 
 await loadRequests(true);
 await loadAttendance();
 
 msg("Status Updated");
+
 }
 
 
-/* ===== SEARCH ===== */
+/* ========= SEARCH ========= */
 
 function filterRequests(){
 
 const q=document.getElementById("searchBox").value.toLowerCase();
 
-requestCache=fullRequestCache.filter(r=>
+requestCache = fullRequestCache.filter(r =>
 r.roll.toLowerCase().includes(q)
 );
 
 renderRequests();
+
 }
 
 
-/* ===== UTIL ===== */
+/* ========= UTIL ========= */
 
-function yearVal(){return val("year")}
-function val(id,d=""){return document.getElementById(id)?.value||d}
-function today(){return new Date().toISOString().split("T")[0]}
-function msg(t){document.getElementById("msg").innerText=t}
+function yearVal(){ return val("year"); }
+
+function val(id,d=""){
+return document.getElementById(id)?.value || d;
+}
+
+function today(){
+return new Date().toISOString().split("T")[0];
+}
+
+function msg(t){
+document.getElementById("msg").innerText=t;
+}
 
 </script>
 
