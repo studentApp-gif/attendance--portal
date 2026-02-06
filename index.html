@@ -68,7 +68,7 @@ button:hover{background:#23527c}
 
 <script>
 
-const SCRIPT_URL="YOUR_SCRIPT_URL_HERE";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
 const dept=new URLSearchParams(window.location.search).get("dept") || "CSE";
 
 let requestCache=[];
@@ -81,29 +81,40 @@ async function checkAttendance(){
 
 msg("Checking attendance...");
 
-const url=`${SCRIPT_URL}?action=saveAttendancePresent
-&dept=${dept}
-&year=${yearVal()}
-&date=${today()}
-&session=${val("session")}
-&boysPresent=0
-&girlsPresent=0`;
+try{
 
-const res=await fetch(url);
-const json=await res.json();
+const res = await fetch(`${SCRIPT_URL}?action=getAttendanceByDate&date=${today()}`);
+const json = await res.json();
 
-if(json.message==="Attendance Already Saved"){
+if(!json.success){
+msg("Server error");
+return;
+}
+
+const exists = json.data.some(row =>
+row.dept === dept &&
+row.year === yearVal() &&
+row.session === val("session")
+);
+
+if(exists){
 msg("Attendance already saved for this session");
+document.getElementById("attendanceForm").innerHTML="";
 document.getElementById("saveBtn").disabled=true;
 loadRequests();
 return;
 }
 
+/* Load form if not saved */
 loadAttendance();
+
+}catch(err){
+msg("Error checking attendance");
+}
 }
 
 
-/* ================= LOAD FORM ================= */
+/* ================= LOAD ENTRY FORM ================= */
 
 function loadAttendance(){
 
@@ -156,7 +167,6 @@ const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD
 const json=await res.json();
 
 if(!json.success){
-msg("No Requests");
 return;
 }
 
@@ -202,7 +212,7 @@ ${ r.status==="PENDING" ? `
 
 async function updateStatus(roll,date,status){
 
-msg("Updating Status...");
+msg("Updating status...");
 
 await fetch(`${SCRIPT_URL}?action=updateLeaveStatus
 &roll=${roll}
@@ -210,7 +220,6 @@ await fetch(`${SCRIPT_URL}?action=updateLeaveStatus
 &status=${status}`);
 
 await loadRequests();
-
 msg("Status Updated");
 }
 
@@ -221,7 +230,7 @@ function filterRequests(){
 
 const q=document.getElementById("searchBox").value.toLowerCase();
 
-requestCache=fullRequestCache.filter(r=>
+requestCache=fullRequestCache.filter(r =>
 r.roll.toLowerCase().includes(q)
 );
 
