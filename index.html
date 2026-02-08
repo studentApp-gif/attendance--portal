@@ -73,7 +73,7 @@ async function loadRequests(silent=false){
 if(!silent) msg("Loading requests...");
 const selected=document.getElementById("yearSelect").value;let year=selected;
 if(dept==="HS"){year=selected.split("-")[2];}
-const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${finaldept}&year=${finalyear}&date=${today()}`);const json=await res.json();
+const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${final}&year=${final}&date=${today()}`);const json=await res.json();
 if(!json.success) return;
 fullRequestCache=json.requests;requestCache=[...fullRequestCache];
 approvedRolls=requestCache.filter(r=>r.status==="APPROVED").map(r=>r.roll);
