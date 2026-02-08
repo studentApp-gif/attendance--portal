@@ -25,7 +25,7 @@ let requestCache=[];let fullRequestCache=[];let approvedRolls=[];
 function loadDropdown(){
 const dropdown=document.getElementById("yearSelect");
 if(dept==="HS"){
-dropdown.innerHTML=`<option value="HS-CSM-1">1st Year CSM</option><option value="HS-CSE-1">1st Year CSE</option><option value="HS-ECE-1">1st Year ECE</option>`;
+dropdown.innerHTML=`<option value="HS-CSM|1">1st Year CSM</option><option value="HS-CSE|1">1st Year CSE</option><option value="HS-ECE|1">1st Year ECE</option>`;
 }else{
 dropdown.innerHTML=`<option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>`;
 }}
@@ -56,8 +56,13 @@ document.getElementById("attendanceForm").innerHTML=html;document.getElementById
 /* ================= SAVE ATTENDANCE ================= */
 async function submitAttendance(){
 const selected=document.getElementById("yearSelect").value;
-let year=selected;
-if(dept==="HS"){year=selected.split("-")[2];}
+let finalDept=dept;
+let finalyear=selected;
+if(dept==="HS"){
+  const parts = selected.split("|");
+  finalDept=parts[0];
+  finalYear=parts[1];
+  }
 const session=document.getElementById("session").value;const date=new Date().toISOString().split("T")[0];
 const boys=document.getElementById("boysPresent").value;const girls=document.getElementById("girlsPresent").value;
 const url=`${SCRIPT_URL}?action=saveAttendancePresent&dept=${dept}&year=${year}&date=${date}&session=${session}&boysPresent=${boys}&girlsPresent=${girls}`;
@@ -68,7 +73,7 @@ async function loadRequests(silent=false){
 if(!silent) msg("Loading requests...");
 const selected=document.getElementById("yearSelect").value;let year=selected;
 if(dept==="HS"){year=selected.split("-")[2];}
-const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}&date=${today()}`);const json=await res.json();
+const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${finaldept}&year=${finalyear}&date=${today()}`);const json=await res.json();
 if(!json.success) return;
 fullRequestCache=json.requests;requestCache=[...fullRequestCache];
 approvedRolls=requestCache.filter(r=>r.status==="APPROVED").map(r=>r.roll);
@@ -98,3 +103,4 @@ renderRequests();}
 function msg(t){document.getElementById("msg").innerText=t;}
 function today(){return new Date().toISOString().split("T")[0];}
 </script></body></html>
+
