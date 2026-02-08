@@ -1,93 +1,100 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Student Attendance Portal</title><meta name="viewport" content="width=device-width, initial-scale=1">
+<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SVCE Student Attendance Portal</title>
 <style>body{font-family:Arial;background:#f2f2f2;margin:0}.container{max-width:700px;margin:20px auto;background:#fff;padding:20px;border-radius:8px}
-h2,h3{text-align:center;color:#004d80}
-label{font-weight:bold;margin-top:10px;display:block}
-select,input,button{width:100%;padding:10px;margin:6px 0 12px;}
-button{background:#337ab7;color:white;border:none;cursor:pointer;}button:hover{background:#23527c}
-.card{border:1px solid #ccc;padding:10px;margin:8px 0;border-radius:5px;background:#fafafa;}
-.status-PENDING{color:orange;font-weight:bold}.status-APPROVED{color:green;font-weight:bold}.status-REJECTED{color:red;font-weight:bold}
-.badge{background:#004d80;color:white;padding:4px 8px;border-radius:5px;font-size:12px;}</style></head>
+h2{text-align:center;color:#004d80}
+label{font-weight:bold;margin-top:10px;display:block}select,input,button{width:100%;padding:10px;margin:6px 0 12px}
+button{background:#337ab7;color:white;border:none;cursor:pointer}button:hover{background:#23527c}
+.approvedStudent{background:#e6ffe6}.badge{background:#004d80;color:white;padding:4px 8px;border-radius:5px;font-size:12px}.card{border:1px solid #ccc;padding:10px;margin:8px 0;border-radius:5px;background:#fafafa}
+.status-PENDING{color:orange;font-weight:bold}.status-APPROVED{color:green;font-weight:bold}.status-REJECTED{color:red;font-weight:bold}</style></head>
 <body>
 <div class="container">
 <h2>SVCE Student Attendance Portal</h2>
-<label>Select Year</label><select id="year"><option value="1">1st Year</option><option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option></select>
-<label>Select Session</label><select id="session"><option value="Morning">Morning (9:30 - 11:10)</option><option value="Afternoon">Afternoon (2:00 - 3:40)</option></select>
-<button onclick="checkAttendance()">Load Attendance</button>
+<label>Select Year / Branch</label><select id="yearSelect"></select>
+<label>Session</label><select id="session"><option value="Morning">Morning</option><option value="Afternoon">Afternoon</option></select>
+<button onclick="loadAttendance()">Load Students</button>
 <div id="attendanceForm"></div>
-<button id="saveBtn" disabled onclick="submitAttendance()">Save Attendance</button>
+<button id="saveBtn" onclick="submitAttendance()" disabled>Save Attendance</button>
 <p id="msg"></p>
 <hr>
-<h3>Student Requests <span id="reqCount" class="badge">0</span></h3>
-<input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()">
-<div id="requestsContainer"></div>
+<h3>Student Requests <span id="reqCount" class="badge">0</span></h3><input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()"><div id="requestsContainer"></div>
 </div>
 <script>
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";const dept=new URLSearchParams(window.location.search).get("dept") || "CSE";
-let requestCache=[];let fullRequestCache=[];
-/* ================= CHECK ATTENDANCE ================= */
-async function checkAttendance(){
-msg("Checking attendance...");
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";const dept=new URLSearchParams(window.location.search).get("dept") || "CSM";
+let requestCache=[];let fullRequestCache=[];let approvedRolls=[];
+
+/* ================= HS DROPDOWN ================= */
+function loadDropdown(){
+const dropdown=document.getElementById("yearSelect");
+if(dept==="HS"){
+dropdown.innerHTML=`<option value="HS-CSM-1">1st Year CSM</option><option value="HS-CSE-1">1st Year CSE</option><option value="HS-ECE-1">1st Year ECE</option>`;
+}else{
+dropdown.innerHTML=`<option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>`;
+}}
+loadDropdown();
+/* ================= LOAD ATTENDANCE ================= */
+async function loadAttendance(){
+msg("Loading students...");document.getElementById("saveBtn").disabled=true;
+await loadRequests(true);
+const selected=document.getElementById("yearSelect").value;
+let year=selected;let branch=null;
+if(dept==="HS"){const parts=selected.split("-");branch=parts[1];year=parts[2];}
 try{
-const res = await fetch(`${SCRIPT_URL}?action=getAttendanceByDate&date=${today()}`);
-const json = await res.json();
-if(!json.success){msg("Server error");return;}
-const exists = json.data.some(row =>row.dept === dept &&row.year === yearVal() &&row.session === val("session"));
-if(exists){msg("Attendance already saved for this session");document.getElementById("attendanceForm").innerHTML="";document.getElementById("saveBtn").disabled=true;await loadRequests();return;}
-loadAttendance();
-}catch(err){msg("Error checking attendance");}
-}
-/* ================= LOAD ENTRY FORM ================= */
-function loadAttendance(){
-document.getElementById("attendanceForm").innerHTML=`
-<label>Present Boys</label><input type="number" id="boysPresent" min="0" value="0">
-<label>Present Girls</label><input type="number" id="girlsPresent" min="0" value="0">`;
-document.getElementById("saveBtn").disabled=false;msg("");
-loadRequests();
-}
+const res=await fetch(`${SCRIPT_URL}?action=getStudents&dept=${dept}&year=${year}`);const json=await res.json();
+if(!json.success){msg("No students found");return;}
+let students=json.students;
+/* HS BRANCH FILTER */
+if(dept==="HS" && branch){
+students=students.filter(s=>{const roll=s.rollno;if(branch==="CSM") return roll.includes("33");if(branch==="CSE") return roll.includes("05");if(branch==="ECE") return roll.includes("04");return true;});}
+let html=`<label>Present Boys</label><input type="number" id="boysPresent" value="0">
+<label>Present Girls</label><input type="number" id="girlsPresent" value="0">
+<div id="studentsList">`;
+students.forEach(s=>{
+const highlight=approvedRolls.includes(s.rollno) ? "approvedStudent" : "";
+html+=`<label class="${highlight}"><input type="checkbox" value="${s.rollno}">${s.rollno}</label>`;});
+html+="</div>";
+document.getElementById("attendanceForm").innerHTML=html;document.getElementById("saveBtn").disabled=false;msg("");
+}catch(e){msg("Server Error");}}
 /* ================= SAVE ATTENDANCE ================= */
 async function submitAttendance(){
-msg("Saving Attendance...");
-try{
-const res=await fetch(`${SCRIPT_URL}?action=saveAttendancePresent&dept=${dept}&year=${yearVal()}&date=${today()}&session=${val("session")}&boysPresent=${val("boysPresent",0)}&girlsPresent=${val("girlsPresent",0)}`);
-const json=await res.json();
-msg(json.message);document.getElementById("saveBtn").disabled=true;
-}catch{msg("Error saving attendance");}
-}
-/* ================= LOAD REQUESTS (TODAY ONLY) ================= */
-async function loadRequests(){
-try{
-const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${yearVal()}&date=${today()}`);
-const json=await res.json();
-if(!json.success){return;}
-fullRequestCache=json.requests || [];requestCache=[...fullRequestCache];
+const selected=document.getElementById("yearSelect").value;
+let year=selected;
+if(dept==="HS"){year=selected.split("-")[2];}
+const session=document.getElementById("session").value;const date=new Date().toISOString().split("T")[0];
+const boys=document.getElementById("boysPresent").value;const girls=document.getElementById("girlsPresent").value;
+const url=`${SCRIPT_URL}?action=saveAttendancePresent&dept=${dept}&year=${year}&date=${date}&session=${session}&boysPresent=${boys}&girlsPresent=${girls}`;
+const res=await fetch(url);const json=await res.json();
+msg(json.message);document.getElementById("saveBtn").disabled=true;}
+/* ================= LOAD REQUESTS ================= */
+async function loadRequests(silent=false){
+if(!silent) msg("Loading requests...");
+const selected=document.getElementById("yearSelect").value;let year=selected;
+if(dept==="HS"){year=selected.split("-")[2];}
+const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${dept}&year=${year}&date=${today()}`);const json=await res.json();
+if(!json.success) return;
+fullRequestCache=json.requests;requestCache=[...fullRequestCache];
+approvedRolls=requestCache.filter(r=>r.status==="APPROVED").map(r=>r.roll);
 document.getElementById("reqCount").innerText=requestCache.length;
 renderRequests();
-}catch{}
-}
+if(!silent) msg("");}
 /* ================= RENDER REQUESTS ================= */
 function renderRequests(){
 const div=document.getElementById("requestsContainer");div.innerHTML="";
 requestCache.forEach(r=>{
-div.innerHTML+=`<div class="card">
-<b>${r.roll}</b> | ${r.date}<br>Reason: ${r.reason}<br>Message: ${r.message}<br>
+div.innerHTML+=`<div class="card"><b>${r.roll}</b> | ${r.date}<br>Reason: ${r.reason}<br>Message: ${r.message}<br>
 Status:<span class="status-${r.status}">${r.status}</span><br><br>
 ${ r.status==="PENDING" ? `<button onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">Approve</button><button onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">Reject</button>` : "" }
-</div>`;});
-}
+</div>`;});}
 /* ================= UPDATE STATUS ================= */
 async function updateStatus(roll,date,status){
 msg("Updating status...");
 await fetch(`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`);
-await loadRequests();
-msg("Status Updated");
-}
+await loadRequests(true);await loadAttendance();
+msg("Status Updated");}
 /* ================= SEARCH ================= */
 function filterRequests(){
 const q=document.getElementById("searchBox").value.toLowerCase();
-requestCache=fullRequestCache.filter(r =>r.roll.toLowerCase().includes(q));
-renderRequests();
-}
+requestCache=fullRequestCache.filter(r=>r.roll.toLowerCase().includes(q));
+renderRequests();}
 /* ================= UTIL ================= */
-function yearVal(){ return val("year") }function val(id,d=""){ return document.getElementById(id)?.value || d }function today(){ return new Date().toISOString().split("T")[0] }function msg(t){ document.getElementById("msg").innerText=t }
-</script>
-</body></html>
+function msg(t){document.getElementById("msg").innerText=t;}
+function today(){return new Date().toISOString().split("T")[0];}
+</script></body></html>
