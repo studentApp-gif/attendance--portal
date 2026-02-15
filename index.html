@@ -62,13 +62,13 @@ Save Attendance
 
 <script>
 
-const SCRIPT_URL="YOUR_SCRIPT_URL_HERE";
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
 const dept=new URLSearchParams(window.location.search).get("dept") || "CSM";
 
 let requestCache=[];
 let fullRequestCache=[];
 
-/* ===== DROPDOWN ===== */
+/* ===== LOAD DROPDOWN ===== */
 function loadDropdown(){
 const dropdown=document.getElementById("yearSelect");
 if(dept==="HS"){
@@ -101,7 +101,7 @@ loadRequests(true);
 msg("");
 }
 
-/* ===== SAVE ATTENDANCE ===== */
+/* ===== SAVE ATTENDANCE (NO DATE SENT) ===== */
 async function submitAttendance(){
 
 const selected=document.getElementById("yearSelect").value;
@@ -115,27 +115,27 @@ finalYear=parts[1];
 }
 
 const session=document.getElementById("session").value;
-const date=new Date().toISOString().split("T")[0]; // ✅ Dynamic Today Date
-
-const boys=document.getElementById("boysPresent").value;
-const girls=document.getElementById("girlsPresent").value;
+const boys=document.getElementById("boysPresent").value || 0;
+const girls=document.getElementById("girlsPresent").value || 0;
 
 const url=`${SCRIPT_URL}?action=saveAttendancePresent
-&dept=${finalDept}
-&year=${finalYear}
-&date=${date}
-&session=${session}
+&dept=${encodeURIComponent(finalDept)}
+&year=${encodeURIComponent(finalYear)}
+&session=${encodeURIComponent(session)}
 &boysPresent=${boys}
 &girlsPresent=${girls}`;
 
+try{
 const res=await fetch(url);
 const json=await res.json();
-
 msg(json.message);
 document.getElementById("saveBtn").disabled=true;
+}catch(e){
+msg("Server Error");
+}
 }
 
-/* ===== LOAD TODAY REQUESTS ===== */
+/* ===== LOAD TODAY REQUESTS (NO DATE SENT) ===== */
 async function loadRequests(silent=false){
 
 const selected=document.getElementById("yearSelect").value;
@@ -148,15 +148,12 @@ finalDept=parts[0];
 finalYear=parts[1];
 }
 
-const today=new Date().toISOString().split("T")[0]; // ✅ Always Today
-
+try{
 const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD
-&dept=${finalDept}
-&year=${finalYear}
-&date=${today}`);
+&dept=${encodeURIComponent(finalDept)}
+&year=${encodeURIComponent(finalYear)}`);
 
 const json=await res.json();
-
 if(!json.success) return;
 
 fullRequestCache=json.requests;
@@ -166,6 +163,10 @@ document.getElementById("reqCount").innerText=requestCache.length;
 renderRequests();
 
 if(!silent) msg("");
+
+}catch(e){
+msg("Error loading requests");
+}
 }
 
 /* ===== RENDER REQUESTS ===== */
