@@ -103,9 +103,10 @@ const dept=new URLSearchParams(window.location.search).get("dept") || "CSM";
 let requestCache=[];
 let fullRequestCache=[];
 
-/* ===== LOAD DROPDOWN ===== */
+/* ===== DROPDOWN ===== */
 function loadDropdown(){
 const dropdown=document.getElementById("yearSelect");
+
 if(dept==="HS"){
 dropdown.innerHTML=`
 <option value="HS-CSM|1">1st Year CSM</option>
@@ -125,6 +126,7 @@ function prepareAttendance(){
 document.getElementById("attendanceForm").innerHTML=`
 <label>Present Boys</label>
 <input type="number" id="boysPresent" value="0" min="0">
+
 <label>Present Girls</label>
 <input type="number" id="girlsPresent" value="0" min="0">
 `;
@@ -168,7 +170,7 @@ msg("Server Error");
 }
 }
 
-/* ===== LOAD REQUESTS ===== */
+/* ===== LOAD TODAY REQUESTS ===== */
 async function loadRequests(silent=false){
 
 const selected=document.getElementById("yearSelect").value;
@@ -204,10 +206,12 @@ msg("Error loading requests");
 
 /* ===== RENDER REQUESTS ===== */
 function renderRequests(){
+
 const div=document.getElementById("requestsContainer");
 div.innerHTML="";
 
 requestCache.forEach(r=>{
+
 div.innerHTML+=`
 <div class="card">
 <b>${r.roll}</b> | ${r.date}<br>
@@ -218,10 +222,10 @@ Status:<span class="status-${r.status}"> ${r.status}</span>
 ${r.status==="PENDING" ? `
 <div class="action-buttons">
 <button class="round-btn approve-btn"
-onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">✅</button>
+onclick="updateStatus('${r.roll}','${r.timestamp}','APPROVED')">✅</button>
 
 <button class="round-btn reject-btn"
-onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">❎</button>
+onclick="updateStatus('${r.roll}','${r.timestamp}','REJECTED')">❎</button>
 </div>
 ` : ""}
 
@@ -229,14 +233,14 @@ onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">❎</button>
 });
 }
 
-/* ===== UPDATE STATUS ===== */
-async function updateStatus(roll,date,status){
+/* ===== UPDATE STATUS (FIXED WITH TIMESTAMP) ===== */
+async function updateStatus(roll,timestamp,status){
 
 msg("Updating...");
 
 await fetch(`${SCRIPT_URL}?action=updateLeaveStatus
 &roll=${encodeURIComponent(roll)}
-&date=${encodeURIComponent(date)}
+&timestamp=${encodeURIComponent(timestamp)}
 &status=${encodeURIComponent(status)}`);
 
 await loadRequests(true);
@@ -251,7 +255,9 @@ requestCache=fullRequestCache.filter(r=>r.roll.toLowerCase().includes(q));
 renderRequests();
 }
 
-function msg(t){ document.getElementById("msg").innerText=t; }
+function msg(t){
+document.getElementById("msg").innerText=t;
+}
 
 </script>
 
