@@ -1,58 +1,425 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>SVCE Student Attendance Portal</title>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SVCE Student Attendance Portal</title>
+
 <style>
-body{  font-family:Arial;  background:#f2f2f2;  margin:0;}
-/* MAIN CARD */.container{  max-width:1200px;  margin:25px auto;  background:white;  padding:25px;  border-radius:10px;  box-shadow:0 2px 10px rgba(0,0,0,0.08);}
-/* TITLE */h2{  text-align:center;  color:#004d80;  margin-bottom:20px;}
-/* THREE COLUMN LAYOUT */.main{  display:flex;  gap:25px;}
-/* LEFT PANEL */.left-panel{  width:25%;  border-right:1px solid #eee;  padding-right:15px;}
-.left-panel h3{  margin-top:0;}
-.badge{  background:#0f6b78;  color:white;  padding:3px 8px;  border-radius:6px;  font-size:12px;}
-/* CENTER BUTTON PANEL */.center-panel{  width:20%;  display:flex;  flex-direction:column;  justify-content:center;  gap:20px;}
-.big-btn{  background:#0f6b78;  color:white;  border:none;  padding:15px;  font-size:16px;  cursor:pointer;  border-radius:6px;}
-.big-btn:hover{  background:#0c5661;}
-/* RIGHT PANEL */.right-panel{  width:55%;}
-/* FORM STYLES */label{  font-weight:bold;  display:block;  margin-top:10px;}
-select,input{  width:100%;  padding:8px;  margin-top:5px;  margin-bottom:15px;  border:1px solid #ccc;  border-radius:4px;}
-/* STUDENT LIST */#studentsList{  max-height:400px;  overflow-y:auto;  border-top:1px solid #eee;  padding-top:10px;}
-#studentsList label{  display:flex;  align-items:center;  gap:10px;  margin-bottom:8px;}
-.approvedStudent{  background:#e6ffe6;  padding:5px;  border-radius:5px;}
-.card{  border:1px solid #ddd;  padding:10px;  margin-top:10px;  border-radius:5px;  background:#fafafa;}
-.status-PENDING{color:orange;font-weight:bold}.status-APPROVED{color:green;font-weight:bold}.status-REJECTED{color:red;font-weight:bold}
-</style></head>
+
+/* ================= GLOBAL ================= */
+
+body{
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:#f2f4f8;
+}
+
+/* ================= HEADER ================= */
+
+.header{
+  background:#003f6b;
+  color:white;
+  padding:15px 20px;
+  font-size:20px;
+  font-weight:bold;
+  text-align:center;
+  letter-spacing:1px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* ================= MAIN CONTAINER ================= */
+
+.container{
+  max-width:900px;
+  margin:30px auto;
+  background:#ffffff;
+  padding:30px;
+  border-radius:10px;
+  box-shadow:0 4px 15px rgba(0,0,0,0.1);
+  animation:fadeIn 0.5s ease-in-out;
+}
+
+/* ================= CONTROLS ================= */
+
+label{
+  font-weight:bold;
+  margin-top:10px;
+  display:block;
+  color:#003f6b;
+}
+
+select,input{
+  width:100%;
+  padding:10px;
+  margin:8px 0 15px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  transition:0.3s;
+}
+
+select:focus,input:focus{
+  outline:none;
+  border-color:#005c99;
+  box-shadow:0 0 6px rgba(0,92,153,0.3);
+}
+
+/* ================= BUTTONS ================= */
+
+button{
+  padding:12px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:15px;
+  transition:0.3s;
+}
+
+.primary-btn{
+  background:#005c99;
+  color:white;
+}
+
+.primary-btn:hover{
+  background:#003f6b;
+  transform:scale(1.02);
+}
+
+.save-btn{
+  background:#00796b;
+  color:white;
+}
+
+.save-btn:hover{
+  background:#004d40;
+  transform:scale(1.02);
+}
+
+.center-btn{
+  width:60%;
+  margin:10px auto;
+  display:block;
+}
+
+/* ================= STUDENT LIST ================= */
+
+#studentsList label{
+  display:block;
+  padding:6px;
+  border-bottom:1px solid #eee;
+  transition:0.3s;
+}
+
+#studentsList label:hover{
+  background:#f1f8ff;
+}
+
+.approvedStudent{
+  background:#e6ffe6 !important;
+}
+
+/* ================= REQUEST SECTION ================= */
+
+.card{
+  border:1px solid #e0e0e0;
+  padding:15px;
+  margin:12px 0;
+  border-radius:10px;
+  background:#ffffff;
+  transition:all 0.3s ease;
+  box-shadow:0 2px 6px rgba(0,0,0,0.05);
+}
+
+.card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+}
+
+.status-PENDING{
+  color:#ff9800;
+  font-weight:600;
+}
+
+.status-APPROVED{
+  color:#2e7d32;
+  font-weight:600;
+}
+
+.status-REJECTED{
+  color:#c62828;
+  font-weight:600;
+}
+
+.card button{
+  padding:8px 14px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:13px;
+  margin-right:8px;
+  transition:0.3s;
+}
+
+.card button:first-of-type{
+  background:#2e7d32;
+  color:white;
+}
+
+.card button:first-of-type:hover{
+  background:#1b5e20;
+}
+
+.card button:last-of-type{
+  background:#c62828;
+  color:white;
+}
+
+.card button:last-of-type:hover{
+  background:#8e0000;
+}
+
+/* ================= SEARCH ================= */
+
+#searchBox{
+  padding:10px;
+  border-radius:6px;
+  border:1px solid #ccc;
+  width:100%;
+  margin-bottom:10px;
+}
+
+/* ================= ANIMATION ================= */
+
+@keyframes fadeIn{
+  from{opacity:0; transform:translateY(15px);}
+  to{opacity:1; transform:translateY(0);}
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media(max-width:768px){
+  .container{
+    padding:20px;
+  }
+  .center-btn{
+    width:100%;
+  }
+}
+
+</style>
+</head>
+
 <body>
+
+<div class="header">
+SVCE Student Attendance Portal
+</div>
+
 <div class="container">
-<h2>SVCE Student Attendance Portal</h2>
-<div class="main">
-<!-- LEFT SIDE --><div class="left-panel">
-<h3>Student Requests <span id="reqCount" class="badge">0</span></h3>
-<input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()">
-<div id="requestsContainer"></div>
-</div>
-<!-- CENTER BUTTONS --><div class="center-panel">
-<button class="big-btn" onclick="loadAttendance()">Load Students</button><button class="big-btn" id="saveBtn" onclick="submitAttendance()" disabled>Save Attendance</button>
-</div>
-<!-- RIGHT SIDE --><div class="right-panel">
-<label>Select Year / Branch</label><select id="yearSelect"></select>
-<label>Session</label><select id="session"><option value="Morning">Morning</option><option value="Afternoon">Afternoon</option></select>
+
+<label>Select Year / Branch</label>
+<select id="yearSelect"></select>
+
+<label>Session</label>
+<select id="session">
+<option value="Morning">Morning</option>
+<option value="Afternoon">Afternoon</option>
+</select>
+
+<button class="primary-btn center-btn" onclick="loadAttendance()">Load Students</button>
+
 <div id="attendanceForm"></div>
+
+<button id="saveBtn" class="save-btn center-btn" onclick="submitAttendance()" disabled>Save Attendance</button>
+
 <p id="msg"></p>
+
+<hr>
+
+<h3>Student Requests <span id="reqCount">0</span></h3>
+
+<input placeholder="Search Roll No..." id="searchBox" onkeyup="filterRequests()">
+
+<div id="requestsContainer"></div>
+
 </div>
-</div>
-</div>
+
 <script>
-const SCRIPT_URL="YOUR_SCRIPT_URL_HERE";const dept=new URLSearchParams(window.location.search).get("dept") || "CSM";
-let requestCache=[];let fullRequestCache=[];let approvedRolls=[];
-/* DROPDOWN */function loadDropdown(){const dropdown=document.getElementById("yearSelect");if(dept==="HS"){dropdown.innerHTML=`<option value="HS-CSM|1">1st Year CSM</option><option value="HS-CSE|1">1st Year CSE</option><option value="HS-ECE|1">1st Year ECE</option>`;}else{dropdown.innerHTML=`<option value="2">2nd Year</option><option value="3">3rd Year</option><option value="4">4th Year</option>`;}}loadDropdown();
-/* LOAD STUDENTS */async function loadAttendance(){
+
+const SCRIPT_URL="https://script.google.com/macros/s/AKfycbwnwn20CSLQrT55Kfyw_CoBM2PipoNMzbEPpVDocuMBF1zn81LLuEYNxuS0-X95XU5t/exec";
+const dept=new URLSearchParams(window.location.search).get("dept") || "CSM";
+
+let requestCache=[];
+let fullRequestCache=[];
+let approvedRolls=[];
+
+/* ===== DROPDOWN ===== */
+function loadDropdown(){
+const dropdown=document.getElementById("yearSelect");
+if(dept==="HS"){
+dropdown.innerHTML=`
+<option value="HS-CSM|1">1st Year CSM</option>
+<option value="HS-CSE|1">1st Year CSE</option>
+<option value="HS-ECE|1">1st Year ECE</option>`;
+}else{
+dropdown.innerHTML=`
+<option value="2">2nd Year</option>
+<option value="3">3rd Year</option>
+<option value="4">4th Year</option>`;
+}}
+loadDropdown();
+
+/* ===== LOAD ATTENDANCE ===== */
+async function loadAttendance(){
+msg("Loading students...");
 document.getElementById("saveBtn").disabled=true;
-const selected=document.getElementById("yearSelect").value;let finalDept=dept;let year=selected;
-if(dept==="HS"){const parts=selected.split("|");finalDept=parts[0];year=parts[1];}
-const res=await fetch(`${SCRIPT_URL}?action=getStudents&dept=${finalDept}&year=${year}`);const json=await res.json();
+
+await loadRequests(true);
+
+const selected=document.getElementById("yearSelect").value;
+let finalDept=dept;
+let year=selected;
+let branch=null;
+
+if(dept==="HS"){
+const parts=selected.split("|");
+finalDept=parts[0];
+year=parts[1];
+branch=parts[0].split("-")[1];
+}
+
+try{
+const res=await fetch(`${SCRIPT_URL}?action=getStudents&dept=${finalDept}&year=${year}`);
+const json=await res.json();
+
 if(!json.success){msg("No students found");return;}
-let html="<div id='studentsList'>";
-json.students.forEach(s=>{const highlight=approvedRolls.includes(s.rollno)?"approvedStudent":"";html+=`<label class="${highlight}"><input type="checkbox" value="${s.rollno}">${s.rollno}</label>`;});
+
+let students=json.students;
+
+if(dept==="HS" && branch){
+students=students.filter(s=>{
+const roll=s.rollno;
+if(branch==="CSM") return roll.includes("33");
+if(branch==="CSE") return roll.includes("05");
+if(branch==="ECE") return roll.includes("04");
+return true;
+});
+}
+
+let html=`<label>Present Boys</label><input type="number" id="boysPresent" value="0">
+<label>Present Girls</label><input type="number" id="girlsPresent" value="0">
+<div id="studentsList">`;
+
+students.forEach(s=>{
+const highlight=approvedRolls.includes(s.rollno) ? "approvedStudent" : "";
+html+=`<label class="${highlight}">
+<input type="checkbox" value="${s.rollno}"> ${s.rollno}
+</label>`;
+});
+
 html+="</div>";
-document.getElementById("attendanceForm").innerHTML=html;document.getElementById("saveBtn").disabled=false;}
-/* MESSAGE */function msg(t){document.getElementById("msg").innerText=t;}
+
+document.getElementById("attendanceForm").innerHTML=html;
+document.getElementById("saveBtn").disabled=false;
+msg("");
+
+}catch(e){msg("Server Error");}
+}
+
+/* ===== SAVE ATTENDANCE ===== */
+async function submitAttendance(){
+
+const selected=document.getElementById("yearSelect").value;
+let finalDept=dept;
+let finalYear=selected;
+
+if(dept==="HS"){
+const parts=selected.split("|");
+finalDept=parts[0];
+finalYear=parts[1];
+}
+
+const session=document.getElementById("session").value;
+const date=new Date().toISOString().split("T")[0];
+const boys=document.getElementById("boysPresent").value;
+const girls=document.getElementById("girlsPresent").value;
+
+const url=`${SCRIPT_URL}?action=saveAttendancePresent&dept=${finalDept}&year=${finalYear}&date=${date}&session=${session}&boysPresent=${boys}&girlsPresent=${girls}`;
+
+const res=await fetch(url);
+const json=await res.json();
+
+msg(json.message);
+document.getElementById("saveBtn").disabled=true;
+}
+
+/* ===== LOAD REQUESTS ===== */
+async function loadRequests(silent=false){
+
+const selected=document.getElementById("yearSelect").value;
+let finalDept=dept;
+let finalYear=selected;
+
+if(dept==="HS"){
+const parts=selected.split("|");
+finalDept=parts[0];
+finalYear=parts[1];
+}
+
+const res=await fetch(`${SCRIPT_URL}?action=getLeaveRequestsForHOD&dept=${finalDept}&year=${finalYear}&date=${today()}`);
+const json=await res.json();
+
+if(!json.success) return;
+
+fullRequestCache=json.requests;
+requestCache=[...fullRequestCache];
+approvedRolls=requestCache.filter(r=>r.status==="APPROVED").map(r=>r.roll);
+
+document.getElementById("reqCount").innerText=requestCache.length;
+renderRequests();
+
+if(!silent) msg("");
+}
+
+/* ===== RENDER REQUESTS ===== */
+function renderRequests(){
+const div=document.getElementById("requestsContainer");
+div.innerHTML="";
+
+requestCache.forEach(r=>{
+div.innerHTML+=`
+<div class="card">
+<b>${r.roll}</b> | ${r.date}<br>
+Reason: ${r.reason}<br>
+Message: ${r.message}<br>
+Status:<span class="status-${r.status}"> ${r.status}</span><br><br>
+${ r.status==="PENDING" ? `
+<button onclick="updateStatus('${r.roll}','${r.date}','APPROVED')">Approve</button>
+<button onclick="updateStatus('${r.roll}','${r.date}','REJECTED')">Reject</button>` : "" }
+</div>`;
+});
+}
+
+/* ===== UPDATE STATUS ===== */
+async function updateStatus(roll,date,status){
+msg("Updating status...");
+await fetch(`${SCRIPT_URL}?action=updateLeaveStatus&roll=${roll}&date=${date}&status=${status}`);
+await loadRequests(true);
+await loadAttendance();
+msg("Status Updated");
+}
+
+/* ===== SEARCH ===== */
+function filterRequests(){
+const q=document.getElementById("searchBox").value.toLowerCase();
+requestCache=fullRequestCache.filter(r=>r.roll.toLowerCase().includes(q));
+renderRequests();
+}
+
+/* ===== UTIL ===== */
+function msg(t){ document.getElementById("msg").innerText=t; }
+function today(){ return new Date().toISOString().split("T")[0]; }
+
 </script>
-</body></html>
+
+</body>
+</html>
